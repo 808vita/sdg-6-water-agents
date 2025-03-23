@@ -9,16 +9,24 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@i-am-bee/beeai-sdk": "^0.0.16",
+    "@types/leaflet": "^1.9.17",
+    "@types/react-leaflet": "^2.8.3",
+    "dotenv": "^16.4.7",
+    "leaflet": "^1.9.4",
+    "mongodb": "^6.15.0",
+    "mongoose": "^8.12.2",
+    "next": "15.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.2.3"
+    "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
