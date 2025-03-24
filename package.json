@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@i-am-bee/beeai-sdk": "^0.0.16",
+    "@ibm-cloud/watsonx-ai": "^1.6.0",
     "@types/leaflet": "^1.9.17",
     "@types/react-leaflet": "^2.8.3",
     "dotenv": "^16.4.7",
