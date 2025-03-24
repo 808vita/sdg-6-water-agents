@@ -1,5 +1,7 @@
 // app/api/watsonx/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { createAgent } from "@/lib/ai/agent"; // Import the agent we'll create
+import { Message } from "beeai-framework/backend/core";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -9,11 +11,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
     }
 
-    // TODO: Implement interaction with IBM watsonx.ai here
-    // Replace this with actual watsonx.ai API call
-    const watsonxResponse = await simulateWatsonxResponse(prompt);
+    // Create AI agent with tools and watsonx setup
+    const agent = await createAgent();
 
-    return NextResponse.json({ data: watsonxResponse });
+    const response = await agent.run({ prompt: prompt });
+
+    return NextResponse.json({ data: response.result.text });
   } catch (error) {
     console.error("watsonx AI Error", error);
     return NextResponse.json(
@@ -21,10 +24,4 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 500 }
     );
   }
-}
-
-// Simulating a LLM response
-async function simulateWatsonxResponse(prompt: string): Promise<string> {
-  // basic simulation that shows what has been passed to the agent.
-  return `AI response to: ${prompt}`;
 }
