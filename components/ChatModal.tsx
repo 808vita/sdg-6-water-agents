@@ -70,7 +70,7 @@ export default function ChatModal() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 w-96 bg-gray-50 border border-gray-300 rounded-lg shadow-xl flex flex-col overflow-y-scroll max-h-2/3">
+    <div className="fixed bottom-4 right-4 w-96 bg-gray-50 border border-gray-300 rounded-lg shadow-xl flex flex-col overflow-y-scroll max-h-3/4">
       <div className="flex items-center justify-between p-4 border-b bg-gray-100">
         <h2 className="font-semibold text-gray-800">Customer Support</h2>
         <button

@@ -1,32 +1,45 @@
 // app/page.tsx
-
+"use client";
+import dynamic from "next/dynamic";
 import ChatModal from "@/components/ChatModal";
+
+const MapComponent = dynamic(() => import("@/components/MapComponent"), {
+  ssr: false,
+  loading: () => <p>Loading map...</p>,
+});
+
+const dummyLocations = [
+  { lat: 34.0522, lng: -118.2437, risk: "High" }, // Los Angeles
+  { lat: 51.5074, lng: 0.1278, risk: "Medium" }, // London
+  { lat: -33.8688, lng: 151.2093, risk: "Low" }, // Sydney
+  { lat: 4.2105, lng: 101.9758, risk: "Critical" }, // Malaysia
+  { lat: -30.5595, lng: 22.9375, risk: "Low" }, // South Africa
+  { lat: 64.9631, lng: -19.0208, risk: "High" }, // Iceland
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
+    <div className="flex flex-col max-h-screen bg-gray-100">
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900">
             Water Shortage Forecast
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="text-sm text-gray-500">
             Using AI to predict and visualize water scarcity.
           </p>
         </div>
       </header>
       <main className="flex-grow">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          {/* Your main content goes here */}
-          <p>This is the main content area of the application.</p>
+        <div className="max-w-11/12 mx-0 py-4 px-2 sm:px-0 lg:px-2 grid grid-cols-3 gap-0.5">
+          <div className="col-span-2">
+            <MapComponent locations={dummyLocations} />
+          </div>
+          <div className="col-span-1">
+            <ChatModal />
+          </div>
         </div>
       </main>
-      <footer className="bg-white">
-        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 text-center text-gray-500">
-          <p>© 2025 Water Shortage Forecast. All rights reserved.</p>
-        </div>
-      </footer>
-      <ChatModal />
     </div>
   );
 }
