@@ -11,6 +11,17 @@ export default function ChatModal() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const storedMessages = localStorage.getItem("chatMessages");
+    if (storedMessages) {
+      setMessages(JSON.parse(storedMessages));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("chatMessages", JSON.stringify(messages));
+  }, [messages]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -53,10 +64,21 @@ export default function ChatModal() {
     }
   };
 
+  const clearChat = () => {
+    setMessages([{ sender: "bot", text: "Hello! How can I help you today?" }]); // Clear the messages state
+    localStorage.removeItem("chatMessages"); // Remove messages from local storage
+  };
+
   return (
     <div className="fixed bottom-4 right-4 w-96 bg-gray-50 border border-gray-300 rounded-lg shadow-xl flex flex-col overflow-y-scroll max-h-2/3">
       <div className="flex items-center justify-between p-4 border-b bg-gray-100">
         <h2 className="font-semibold text-gray-800">Customer Support</h2>
+        <button
+          onClick={clearChat}
+          className="bg-red-500 hover:bg-red-600 text-white text-xs rounded p-2 cursor-pointer"
+        >
+          Clear Chat
+        </button>
         <button
           onClick={() => setIsOpen(false)}
           className="focus:outline-none text-gray-500 hover:text-gray-700"
