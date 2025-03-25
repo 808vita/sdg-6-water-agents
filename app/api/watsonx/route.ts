@@ -1,6 +1,11 @@
+// app/api/agent/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createWaterForecastingAgent } from "@/lib/ai/agent";
+import {
+  createWaterForecastingAgent,
+  createMapNavigationAgent,
+} from "@/lib/ai/agent";
 import { Message, UserMessage } from "beeai-framework/backend/core";
+import { StringToolOutput } from "beeai-framework/tools/base";
 
 interface RequestBody {
   messages?: { sender: string; text: string }[];
@@ -44,13 +49,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const workflow = await createWaterForecastingAgent();
-
-    const response = await workflow.run([
-      { prompt: promptMessage.text }, // all to create to one prompt.
-    ]);
-
-    return NextResponse.json({ data: response.result.finalAnswer });
+    if (
+      promptMessage.text.includes("navigate") ||
+      promptMessage.text.includes("map")
+    ) {
+      const agent = await createMapNavigationAgent();
+      const response = await agent.run({ prompt: promptMessage.text });
+      const MockGetCoordinates = new StringToolOutput(
+        JSON.stringify({
+          coordinates: { latitude: 4.2105, longitude: 101.9758 },
+          message: "Navigate to Malaysia",
+        })
+      );
+      return NextResponse.json({ data: JSON.stringify(MockGetCoordinates) });
+    } else {
+      const workflow = await createWaterForecastingAgent();
+      const response = await workflow.run([
+        { prompt: promptMessage.text }, // all to create to one prompt.
+      ]);
+      return NextResponse.json({ data: response.result.finalAnswer });
+    }
   } catch (error) {
     console.error("watsonx AI Error", error);
     return NextResponse.json(
