@@ -54,23 +54,28 @@ export default function ChatModal() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 w-96 bg-white rounded-lg shadow-xl flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="font-semibold">Customer Support</h2>
-        <button onClick={() => setIsOpen(false)} className="focus:outline-none">
+    <div className="fixed bottom-4 right-4 w-96 bg-gray-50 border border-gray-300 rounded-lg shadow-xl flex flex-col overflow-y-scroll max-h-2/3">
+      <div className="flex items-center justify-between p-4 border-b bg-gray-100">
+        <h2 className="font-semibold text-gray-800">Customer Support</h2>
+        <button
+          onClick={() => setIsOpen(false)}
+          className="focus:outline-none text-gray-500 hover:text-gray-700"
+        >
           X
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 p-4 space-y-4 ">
         {messages.map((message, index) => (
           <div
             key={index}
-            className={`text-sm ${
-              message.sender === "user" ? "text-right" : "text-left"
+            className={`text-sm rounded-lg p-3 max-w-fit ${
+              message.sender === "user"
+                ? "bg-blue-100 text-blue-800 justify-self-end"
+                : "bg-gray-100 text-gray-800 justify-self-start"
             }`}
           >
-            <span className="font-semibold">
+            <span className="font-semibold mx-0.5">
               {message.sender === "user" ? "You" : "Bot"}:
             </span>
             {message.text}
@@ -78,7 +83,8 @@ export default function ChatModal() {
         ))}
         <div ref={messagesEndRef} />
         {isLoading && (
-          <div className="flex space-x-2 animate-pulse">
+          <div className="flex space-x-2 animate-pulse text-blue-700">
+            Thinking
             <div>.</div>
             <div>.</div>
             <div>.</div>
@@ -94,12 +100,12 @@ export default function ChatModal() {
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
             placeholder="Type your message..."
-            className="flex-1 border rounded p-2"
+            className="flex-1 border rounded p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={handleSend}
             disabled={isLoading}
-            className="bg-blue-500 text-white rounded p-2"
+            className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50"
           >
             Send
           </button>
