@@ -11,7 +11,7 @@ interface RequestBody {
 }
 
 type ValidMessageRole = "user" | "assistant" | "system" | "tool";
-
+const idetifiers = ["navigate", "map", "move to", "set", "show", "locate"];
 const mapSenderRole = (sender: string): ValidMessageRole => {
   switch (sender) {
     case "user":
@@ -49,10 +49,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     if (
-      promptMessage.text.includes("navigate") ||
-      promptMessage.text.includes("map") ||
-      promptMessage.text.includes("move to") ||
-      promptMessage.text.includes("set")
+      // promptMessage.text.includes("navigate") ||
+      // promptMessage.text.includes("map") ||
+      // promptMessage.text.includes("move to") ||
+      // promptMessage.text.includes("set")
+      idetifiers.some((keyword) =>
+        promptMessage.text.toLowerCase().includes(keyword)
+      )
     ) {
       // NAVIGATION AGENT
       const agent = await createMapNavigationAgent();

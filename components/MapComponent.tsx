@@ -1,11 +1,12 @@
 // components/MapComponent.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import "leaflet/dist/leaflet.css";
 import { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import MarkerHandler, { MarkerState } from "./MarkerHandler";
+import { useMapContext } from "@/lib/context/MapContext"; // Access context values
 
 import "leaflet-control-geocoder/dist/Control.Geocoder.css";
 import "leaflet-control-geocoder";
@@ -15,6 +16,7 @@ import L from "leaflet";
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
+import MapActions from "./MapActions";
 
 // Issue fix to prevent errors
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -25,7 +27,7 @@ L.Icon.Default.mergeOptions({
 });
 
 interface MapProps {
-  initialLocations: Location[];
+  //initialLocations: Location[]; // Removed initialLocations
 }
 
 interface Location {
@@ -35,17 +37,17 @@ interface Location {
   address?: string | null; // Add address to the location type
 }
 
-const MapComponent: React.FC<MapProps> = ({ initialLocations }) => {
+const MapComponent: React.FC<MapProps> = () => {
   const position: LatLngExpression = [51.5074, 0.1278]; // Default map center
-  const [markers, setMarkers] = useState<MarkerState[]>(initialLocations);
+  const { markers, removeMarker, setMarkers } = useMapContext(); // Access context values
 
-  useEffect(() => {
-    setMarkers(initialLocations);
-  }, [initialLocations]);
+  //  useEffect(() => {
+  //   setMarkers(initialLocations);
+  // }, [initialLocations]);
 
-  const removeMarker = (id: string) => {
-    setMarkers(markers.filter((marker) => marker.id !== id));
-  };
+  // const removeMarker = (id: string) => {
+  //  setMarkers(markers.filter((marker) => marker.id !== id));
+  // };
 
   useEffect(() => {
     console.log("markers", markers);
@@ -77,6 +79,7 @@ const MapComponent: React.FC<MapProps> = ({ initialLocations }) => {
         </Marker>
       ))}
       <MarkerHandler setMarkers={setMarkers} markers={markers} />
+      <MapActions />
     </MapContainer>
   );
 };

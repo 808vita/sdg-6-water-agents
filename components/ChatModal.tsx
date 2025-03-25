@@ -3,6 +3,7 @@
 
 import React, { useRef, useEffect } from "react";
 import useChat from "@/lib/hooks/useChat";
+import { useMapContext } from "@/lib/context/MapContext";
 
 const ChatModal = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -32,9 +33,24 @@ const ChatModal = () => {
       },
     });
 
+  const { setLastMessage } = useMapContext();
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (
+        lastMessage.text.startsWith("SET_MARKER|") &&
+        lastMessage.sender === "bot"
+      ) {
+        setLastMessage(lastMessage);
+        console.log(lastMessage);
+      }
+    }
+  }, [messages, setLastMessage]);
 
   return (
     <div className="fixed bottom-4 right-4 w-96 bg-gray-50 border border-gray-300 rounded-lg shadow-xl flex flex-col overflow-y-scroll max-h-3/4">
