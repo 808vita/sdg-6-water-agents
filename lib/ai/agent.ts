@@ -57,18 +57,19 @@ export const createMapNavigationAgent = async () => {
 
   return new ToolCallingAgent({
     llm,
-    memory: new UnconstrainedMemory(), // No memory needed for direct commands
+    memory: new UnconstrainedMemory(),
     tools: [],
     meta: {
       name: "MapNavigationAgent",
       description:
-        "Directs navigation requests and responds with structured data for map updates",
+        "Extracts a location from user prompts related to navigation or map requests.",
     },
     templates: {
       system: (template) =>
         template.fork((config) => {
-          config.defaults.instructions =
-            "You are an expert at understanding user's intent and user can also ask you to navigate , also create a best response for user. What is the user asks or wants, give to me with JSON that can have the object `coordinate` that has latitude and longitude, and `command_message` is the data that extracted from the user. if can provide all of them. provide them as possible as. If the user asks a question that is irrelevent, just ask politely how you may help. Make sure you do not hallucinate and that if user wants information , ask him to rephase that way that you can do search with your knowledge and experience";
+          config.defaults.instructions = `You are an expert at identifying locations from user prompts. 
+          Your sole task is to extract the location. Do not provide any additional information or conversational text.
+          The output can only be the location.`;
         }),
     },
   });
