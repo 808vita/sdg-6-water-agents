@@ -1,73 +1,40 @@
+// components/ChatModal.tsx
 "use client";
-import React, { useState, useEffect, useRef } from "react";
 
-export default function ChatModal() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{ sender: string; text: string }[]>([
-    { sender: "bot", text: "Hello! How can I help you today?" },
-  ]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+import React, { useRef, useEffect } from "react";
+import useChat from "@/lib/hooks/useChat";
+
+const ChatModal = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { messages, input, isLoading, setInput, handleSend, clearChat } =
+    useChat({
+      onSend: async (messages) => {
+        try {
+          const response = await fetch("/api/watsonx", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ messages }), // Send the chat history
+          });
 
-  useEffect(() => {
-    const storedMessages = localStorage.getItem("chatMessages");
-    if (storedMessages) {
-      setMessages(JSON.parse(storedMessages));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("chatMessages", JSON.stringify(messages));
-  }, [messages]);
+          const data = await response.json();
+          return {
+            sender: "bot",
+            text: data.data || "Sorry, I received an empty response.",
+          };
+        } catch (error) {
+          return {
+            sender: "bot",
+            text: "Sorry, I could not connect to the AI backend. Please try again later.",
+          };
+        }
+      },
+    });
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMessage = { sender: "user", text: input };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/watsonx", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ messages: messages.concat(userMessage) }), // Send the chat history
-      });
-
-      const data = await response.json();
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "bot",
-          text: data.data || "Sorry, I received an empty response.",
-        },
-      ]);
-    } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "bot",
-          text: "Sorry, I could not connect to the AI backend. Please try again later.",
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const clearChat = () => {
-    setMessages([{ sender: "bot", text: "Hello! How can I help you today?" }]); // Clear the messages state
-    localStorage.removeItem("chatMessages"); // Remove messages from local storage
-  };
 
   return (
     <div className="fixed bottom-4 right-4 w-96 bg-gray-50 border border-gray-300 rounded-lg shadow-xl flex flex-col overflow-y-scroll max-h-3/4">
@@ -78,12 +45,6 @@ export default function ChatModal() {
           className="bg-red-500 hover:bg-red-600 text-white text-xs rounded p-2 cursor-pointer"
         >
           Clear Chat
-        </button>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="focus:outline-none text-gray-500 hover:text-gray-700"
-        >
-          X
         </button>
       </div>
 
@@ -135,4 +96,6 @@ export default function ChatModal() {
       </div>
     </div>
   );
-}
+};
+
+export default ChatModal;
