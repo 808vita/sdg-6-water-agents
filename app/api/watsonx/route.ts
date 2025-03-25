@@ -1,6 +1,5 @@
-// app/api/watsonx/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAgent } from "@/lib/ai/agent";
+import { createWaterForecastingAgent } from "@/lib/ai/agent";
 import { Message, UserMessage } from "beeai-framework/backend/core";
 
 interface RequestBody {
@@ -31,12 +30,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const finalMessages = messages.map((msg) => {
-      return Message.of({
+    const finalMessages = messages.map((msg) =>
+      Message.of({
         role: mapSenderRole(msg.sender),
         text: msg.text,
-      });
-    });
+      })
+    );
+
     const promptMessage = finalMessages.slice(-1)[0];
     if (!(promptMessage instanceof UserMessage)) {
       throw new Error(
@@ -44,12 +44,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Create AI agent with tools and watsonx setup
-    const agent = await createAgent(finalMessages);
+    const workflow = await createWaterForecastingAgent();
 
-    const response = await agent.run({ prompt: promptMessage.text });
+    const response = await workflow.run([
+      { prompt: promptMessage.text }, // all to create to one prompt.
+    ]);
 
-    return NextResponse.json({ data: response.result.text });
+    return NextResponse.json({ data: response.result.finalAnswer });
   } catch (error) {
     console.error("watsonx AI Error", error);
     return NextResponse.json(
