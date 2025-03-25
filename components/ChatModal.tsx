@@ -28,7 +28,7 @@ export default function ChatModal() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt: input }),
+        body: JSON.stringify({ messages: messages.concat(userMessage) }), // Send the chat history
       });
 
       const data = await response.json();
