@@ -5,6 +5,8 @@ interface Message {
   sender: string;
   text: string;
   mapCommands?: { command: string; location: string }[];
+  role?: string;
+  content?: any;
 }
 
 interface ChatHookOptions {
@@ -22,7 +24,7 @@ const useChat = (options: ChatHookOptions = {}) => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Load messages from local storage, but only on the client-side
+    // Load messages from local storage
     if (typeof window !== "undefined") {
       const storedMessages = localStorage.getItem("chatMessages");
       if (storedMessages) {
@@ -32,7 +34,7 @@ const useChat = (options: ChatHookOptions = {}) => {
   }, []);
 
   useEffect(() => {
-    // Save messages to local storage, but only on the client-side
+    // Save messages to local storage
     if (typeof window !== "undefined") {
       localStorage.setItem("chatMessages", JSON.stringify(messages));
     }

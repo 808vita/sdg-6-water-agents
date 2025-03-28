@@ -4,9 +4,9 @@
 import React, { useRef, useEffect } from "react";
 import useChat from "@/lib/hooks/useChat";
 import { useMapContext } from "@/lib/context/MapContext";
-import { Message, MessageContentPart } from "beeai-framework/backend/core";
+import { Message } from "beeai-framework/backend/core";
 
-// Extend the Message interface to include mapCommands
+// Define a more precise ChatMessage interface
 interface ChatMessage extends Message {
   mapCommands?: { command: string; location: string }[];
 }
@@ -22,30 +22,39 @@ const ChatModal = () => {
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ messages }), // Send the chat history
+            body: JSON.stringify({ messages }),
           });
 
           if (!response.ok) {
-            const errorData = await response.json(); // Parse error response
-            throw new Error(errorData.error || "Failed to send message.");
+            const errorData = await response.json();
+            throw new Error(errorData?.error || "Failed to send message.");
           }
+
           const data = await response.json();
-          return {
+
+          // Safely construct the ChatMessage object
+          const chatMessage: ChatMessage = {
             sender: "bot",
             text:
-              data.data.messageText || "Sorry, I received an empty response.",
-            mapCommands: data.data.mapCommands,
+              data?.data?.messageText || "Sorry, I received an empty response.",
+            mapCommands: data?.data?.mapCommands,
+            role: "assistant", // Ensure role is always provided
+            content: [], // Provide a default value of content
           };
+          return chatMessage;
         } catch (error: any) {
+          console.error("Error during onSend:", error); // Log the error for debugging
           return {
             sender: "bot",
             text: "Sorry, I could not connect to the AI backend. Please try again later.",
+            role: "assistant", // setting default
+            content: [], // setting default
           };
         }
       },
     });
 
-  const { setLastMessage } = useMapContext();
+  const { setLastMessage, setMarkers } = useMapContext();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,26 +63,36 @@ const ChatModal = () => {
   useEffect(() => {
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
-      // Verify if message can be parsed and there is mapCommands
+
+      // Safely check properties before using
       if (
-        lastMessage.sender === "bot" &&
+        lastMessage?.sender === "bot" &&
         typeof lastMessage === "object" &&
         lastMessage !== null &&
         "mapCommands" in lastMessage &&
         Array.isArray((lastMessage as ChatMessage).mapCommands)
       ) {
+        // Properly cast lastMessage to ChatMessage for type safety
         setLastMessage(lastMessage as ChatMessage);
-        console.log(lastMessage);
+        console.log("Last Message:", lastMessage);
       }
     }
   }, [messages, setLastMessage]);
+
+  const handleClearChat = () => {
+    clearChat(); // Clear the messages state
+    setMarkers([]); // Clear the map markers
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("mapMarkers"); // Remove messages from local storage
+    }
+  };
 
   return (
     <div className="fixed bottom-4 right-4 w-96 bg-gray-50 border border-gray-300 rounded-lg shadow-xl flex flex-col overflow-y-scroll max-h-3/4">
       <div className="flex items-center justify-between p-4 border-b bg-gray-100">
         <h2 className="font-semibold text-gray-800">Customer Support</h2>
         <button
-          onClick={clearChat}
+          onClick={handleClearChat}
           className="bg-red-500 hover:bg-red-600 text-white text-xs rounded p-2 cursor-pointer"
         >
           Clear Chat

@@ -9,6 +9,8 @@ import {
   DuckDuckGoSearchToolOutput,
 } from "beeai-framework/tools/search/duckDuckGoSearch";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { Message, MessageContentPart } from "beeai-framework/backend/core";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 
 // Define types for agent responses
 interface AgentResponse {
@@ -44,6 +46,7 @@ class OrchestratorAgent extends BaseAgent {
   private newsAgent: NewsAgent;
   private climateResearcher: ClimateResearcher;
   private waterShortageForecastAgent: WaterShortageForecastAgent;
+  private memory: UnconstrainedMemory; // Agent-level memory
 
   constructor() {
     super();
@@ -51,11 +54,12 @@ class OrchestratorAgent extends BaseAgent {
     this.newsAgent = new NewsAgent();
     this.climateResearcher = new ClimateResearcher();
     this.waterShortageForecastAgent = new WaterShortageForecastAgent();
+    this.memory = new UnconstrainedMemory(); // Initialize memory
   }
 
   async run(userPrompt: string): Promise<AgentResponse> {
     try {
-      // 1. Extract Location from user prompt (basic implementation, improve later)
+      // 1. Extract Location from user prompt (simple for POC, can improve later)
       const location = this.extractLocation(userPrompt);
       if (!location) {
         return {
@@ -65,6 +69,10 @@ class OrchestratorAgent extends BaseAgent {
         };
       }
 
+      // Add user message to memory
+      await this.memory.add(
+        Message.of({ sender: "user", text: userPrompt, role: "user" })
+      );
       // 2. Call Data Collection Agents
       const weatherResponse = await this.weatherAgent.run(location);
       const newsResponse = await this.newsAgent.run(location);
@@ -100,6 +108,15 @@ class OrchestratorAgent extends BaseAgent {
 
       // 4. Format Output (This is where you create the map commands)
       const { risk, summary } = forecastResponse.data;
+
+      // Add bot message to memory
+      await this.memory.add(
+        Message.of({
+          sender: "bot",
+          text: `Risk ${risk} - Summary ${summary}`,
+          role: "assistant",
+        })
+      );
 
       const mapCommands = [
         { command: "SET_MARKER", location: location },
@@ -148,8 +165,8 @@ class WeatherAgent extends BaseAgent {
   async run(location: string): Promise<AgentResponse> {
     try {
       // Use the 'getWeatherForecast' method from the OpenMeteoTool
-      const currentDate = new Date().toISOString().slice(0, 10); // Get current date in YYYY-MM-DD format
       const locationObject = { name: location };
+      const currentDate = new Date().toISOString().slice(0, 10);
       const weatherData = await this.openMeteoTool.run({
         location: locationObject,
         start_date: currentDate,
@@ -174,9 +191,9 @@ class NewsAgent extends BaseAgent {
   async run(location: string): Promise<AgentResponse> {
     try {
       // Use the 'search' method from the DuckDuckGoSearchTool
-      const searchResults = (await this.duckDuckGoSearchTool.run({
+      const searchResults = await this.duckDuckGoSearchTool.run({
         query: `water shortage in ${location}`,
-      })) as DuckDuckGoSearchToolOutput;
+      });
       return { success: true, data: searchResults.results };
     } catch (error: any) {
       return this.handleAgentError("NewsAgent", error);
@@ -197,18 +214,21 @@ class ClimateResearcher extends BaseAgent {
 
   async run(location: string): Promise<AgentResponse> {
     try {
-      let climateData = (await this.wikipediaTool.run({
+      let climateData = await this.wikipediaTool.run({
         query: `${location} climate`,
-      })) as WikipediaToolOutput;
+      });
+      //We are creating sanitation since both tools are providing different return for data
+      let sanitizedResults;
 
-      if (!climateData || climateData.results.length === 0) {
-        const duckDuckGoSearchResults = (await this.duckDuckGoSearchTool.run({
-          query: `${location} climate`,
-        })) as DuckDuckGoSearchToolOutput; //Uses DuckDuckGo if wikpedia failed
-        climateData = duckDuckGoSearchResults as any; // quick fix, must implement proper type checking
+      if (climateData && "results" in climateData) {
+        // ClimateData is Wikipedia Tool
+        sanitizedResults = (climateData as WikipediaToolOutput).results;
+      } else {
+        // ClimateData is DuckDuckGo Tool
+        sanitizedResults = (climateData as DuckDuckGoSearchToolOutput).results;
       }
 
-      return { success: true, data: climateData };
+      return { success: true, data: sanitizedResults };
     } catch (error: any) {
       return this.handleAgentError("ClimateResearcher", error);
     }
@@ -302,7 +322,7 @@ export const createWaterForecastingAgent = async () => {
 export const createMapNavigationAgent = async () => {
   //returning a dummy response , no functionality implemented .
   return {
-    run: async (p0: { prompt: string; }) => ({
+    run: async () => ({
       result: {
         text: "dummy",
       },
