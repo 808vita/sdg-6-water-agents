@@ -100,7 +100,7 @@ const ChatModal = () => {
         Array.isArray((lastMessage as ChatMessage).mapCommands)
       ) {
         setLastMessage(lastMessage as ChatMessage);
-        setNavigationDone(true); // Enable subsequent prompts
+        selectedPlace !== "" && setNavigationDone(true); // Enable subsequent prompts
       }
     }
   }, [messages, setLastMessage]);
