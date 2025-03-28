@@ -19,6 +19,7 @@ const ChatModal = () => {
     isLoading,
     setInput: baseSetInput,
     handleSend: baseHandleSend,
+    sendPrompt,
     clearChat,
   } = useChat({
     onSend: async (messages) => {
@@ -151,7 +152,7 @@ const ChatModal = () => {
       setIsChangingLocation(false);
     }
 
-    baseHandleSend(finalMessage);
+    baseHandleSend();
     setInput("");
 
     // Reset input after sending
@@ -225,7 +226,7 @@ const ChatModal = () => {
                   ))}
                 </select>
                 <button
-                  onClick={handleSend}
+                  onClick={() => handleSend()}
                   disabled={isLoading || selectedPlace === ""}
                   className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50 ml-2"
                 >
@@ -243,7 +244,11 @@ const ChatModal = () => {
                   .map((prompt, index) => (
                     <button
                       key={index}
-                      onClick={() => handleSend(prompt)}
+                      onClick={() => {
+                        sendPrompt(
+                          prompt.replace("[Place Name]", selectedPlace)
+                        );
+                      }}
                       className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50"
                     >
                       {prompt.replace("[Place Name]", selectedPlace)}

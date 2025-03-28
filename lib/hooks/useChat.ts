@@ -104,12 +104,51 @@ const useChat = (options: ChatHookOptions = {}) => {
     }
   };
 
+  const sendPrompt = async (prompt: string) => {
+    if (!prompt.trim()) return;
+
+    const userMessage: ChatMessage = {
+      sender: "user",
+      text: prompt,
+      role: "user",
+      content: [],
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+
+    try {
+      if (options.onSend) {
+        const botMessage = (await options.onSend([
+          ...messages,
+          userMessage,
+        ])) as ChatMessage;
+        if (botMessage) {
+          setMessages((prev) => [...prev, botMessage]);
+        }
+      }
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: "Sorry, I could not connect to the AI backend. Please try again later.",
+          role: "assistant",
+          content: [],
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     messages,
     input,
     isLoading,
     setInput,
     handleSend,
+    sendPrompt,
     clearChat,
   };
 };
