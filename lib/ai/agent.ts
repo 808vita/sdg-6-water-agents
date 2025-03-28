@@ -1,76 +1,311 @@
 // lib/ai/agent.ts
-import { AgentWorkflow } from "beeai-framework/workflows/agent";
 import { WatsonxChatModel } from "beeai-framework/adapters/watsonx/backend/chat";
-import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
-import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
+import {
+  WikipediaTool,
+  WikipediaToolOutput,
+} from "beeai-framework/tools/search/wikipedia";
+import {
+  DuckDuckGoSearchTool,
+  DuckDuckGoSearchToolOutput,
+} from "beeai-framework/tools/search/duckDuckGoSearch";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
-import { ToolCallingAgent } from "beeai-framework/agents/toolCalling/agent";
-import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 
-// Define the workflow name
-const workflowName = "WaterForecastingAssistant";
+// Define types for agent responses
+interface AgentResponse {
+  success: boolean;
+  data: any;
+  error?: string;
+}
 
-// Export the function to create the agent workflow
+// Abstract class for common agent functionality (if needed)
+abstract class BaseAgent {
+  protected llm: any; // WatsonxChatModel or similar
+
+  constructor() {
+    this.llm = new WatsonxChatModel("ibm/granite-3-8b-instruct");
+  }
+
+  // Helper function to handle agent errors consistently
+  protected handleAgentError(agentName: string, error: any): AgentResponse {
+    console.error(`${agentName} error:`, error);
+    return {
+      success: false,
+      data: null,
+      error: `${agentName} failed: ${error.message}`,
+    };
+  }
+
+  abstract run(input: any): Promise<AgentResponse>;
+}
+
+// 1. Orchestrator Agent
+class OrchestratorAgent extends BaseAgent {
+  private weatherAgent: WeatherAgent;
+  private newsAgent: NewsAgent;
+  private climateResearcher: ClimateResearcher;
+  private waterShortageForecastAgent: WaterShortageForecastAgent;
+
+  constructor() {
+    super();
+    this.weatherAgent = new WeatherAgent();
+    this.newsAgent = new NewsAgent();
+    this.climateResearcher = new ClimateResearcher();
+    this.waterShortageForecastAgent = new WaterShortageForecastAgent();
+  }
+
+  async run(userPrompt: string): Promise<AgentResponse> {
+    try {
+      // 1. Extract Location from user prompt (basic implementation, improve later)
+      const location = this.extractLocation(userPrompt);
+      if (!location) {
+        return {
+          success: false,
+          data: null,
+          error: "Could not extract location from prompt.",
+        };
+      }
+
+      // 2. Call Data Collection Agents
+      const weatherResponse = await this.weatherAgent.run(location);
+      const newsResponse = await this.newsAgent.run(location);
+      const climateResponse = await this.climateResearcher.run(location);
+
+      if (
+        !weatherResponse.success ||
+        !newsResponse.success ||
+        !climateResponse.success
+      ) {
+        return {
+          success: false,
+          data: null,
+          error: "Failed to collect data from one or more agents.",
+        };
+      }
+
+      // 3. Call Water Shortage Forecast Agent
+      const forecastResponse = await this.waterShortageForecastAgent.run({
+        weather: weatherResponse.data,
+        news: newsResponse.data,
+        climate: climateResponse.data,
+        location: location,
+      });
+
+      if (!forecastResponse.success) {
+        return {
+          success: false,
+          data: null,
+          error: "Failed to forecast water shortage.",
+        };
+      }
+
+      // 4. Format Output (This is where you create the map commands)
+      const { risk, summary } = forecastResponse.data;
+
+      const mapCommands = [
+        { command: "SET_MARKER", location: location },
+        {
+          command: "SET_POPUP",
+          content: `Water Shortage Risk: ${risk}\n${summary}`,
+        },
+      ];
+
+      const messageText = `The water shortage risk in ${location} is ${risk}. ${summary}`;
+
+      return {
+        success: true,
+        data: {
+          messageText: messageText,
+          mapCommands: mapCommands,
+        },
+      };
+    } catch (error: any) {
+      return this.handleAgentError("OrchestratorAgent", error);
+    }
+  }
+
+  // IMPROVED LOCATION EXTRACTION (still basic, can be enhanced further)
+  private extractLocation(prompt: string): string | null {
+    const locationKeywords = ["in", "at", "near", "for"];
+    for (const keyword of locationKeywords) {
+      const index = prompt.toLowerCase().indexOf(keyword + " ");
+      if (index > -1) {
+        return prompt.substring(index + keyword.length + 1).trim();
+      }
+    }
+    return prompt.trim(); // If no keyword is found, return the entire prompt as location
+  }
+}
+
+// 2. Weather Agent
+class WeatherAgent extends BaseAgent {
+  private openMeteoTool: OpenMeteoTool;
+
+  constructor() {
+    super();
+    this.openMeteoTool = new OpenMeteoTool();
+  }
+
+  async run(location: string): Promise<AgentResponse> {
+    try {
+      // Use the 'getWeatherForecast' method from the OpenMeteoTool
+      const currentDate = new Date().toISOString().slice(0, 10); // Get current date in YYYY-MM-DD format
+      const locationObject = { name: location };
+      const weatherData = await this.openMeteoTool.run({
+        location: locationObject,
+        start_date: currentDate,
+        end_date: currentDate,
+      });
+      return { success: true, data: weatherData.result };
+    } catch (error: any) {
+      return this.handleAgentError("WeatherAgent", error);
+    }
+  }
+}
+
+// 3. News Agent
+class NewsAgent extends BaseAgent {
+  private duckDuckGoSearchTool: DuckDuckGoSearchTool;
+
+  constructor() {
+    super();
+    this.duckDuckGoSearchTool = new DuckDuckGoSearchTool();
+  }
+
+  async run(location: string): Promise<AgentResponse> {
+    try {
+      // Use the 'search' method from the DuckDuckGoSearchTool
+      const searchResults = (await this.duckDuckGoSearchTool.run({
+        query: `water shortage in ${location}`,
+      })) as DuckDuckGoSearchToolOutput;
+      return { success: true, data: searchResults.results };
+    } catch (error: any) {
+      return this.handleAgentError("NewsAgent", error);
+    }
+  }
+}
+
+// 4. Climate Researcher
+class ClimateResearcher extends BaseAgent {
+  private wikipediaTool: WikipediaTool;
+  private duckDuckGoSearchTool: DuckDuckGoSearchTool; //Added the duckduckgo search tool
+
+  constructor() {
+    super();
+    this.wikipediaTool = new WikipediaTool();
+    this.duckDuckGoSearchTool = new DuckDuckGoSearchTool(); // Intialized here
+  }
+
+  async run(location: string): Promise<AgentResponse> {
+    try {
+      let climateData = (await this.wikipediaTool.run({
+        query: `${location} climate`,
+      })) as WikipediaToolOutput;
+
+      if (!climateData || climateData.results.length === 0) {
+        const duckDuckGoSearchResults = (await this.duckDuckGoSearchTool.run({
+          query: `${location} climate`,
+        })) as DuckDuckGoSearchToolOutput; //Uses DuckDuckGo if wikpedia failed
+        climateData = duckDuckGoSearchResults as any; // quick fix, must implement proper type checking
+      }
+
+      return { success: true, data: climateData };
+    } catch (error: any) {
+      return this.handleAgentError("ClimateResearcher", error);
+    }
+  }
+}
+
+// 5. Water Shortage Forecast Agent
+class WaterShortageForecastAgent extends BaseAgent {
+  async run(input: {
+    weather: any;
+    news: any;
+    climate: any;
+    location: string;
+  }): Promise<AgentResponse> {
+    try {
+      // *** IMPROVED RISK ASSESSMENT LOGIC ***
+      let risk = "Low";
+      let summary =
+        "Based on available data, the risk of water shortage is currently low.";
+
+      // Check weather data (example: low rainfall)
+      if (
+        input.weather &&
+        input.weather.daily &&
+        input.weather.daily.rain_sum
+      ) {
+        const rainSum = input.weather.daily.rain_sum[0];
+        if (rainSum < 1) {
+          risk = "Medium";
+          summary += " Low rainfall is observed.";
+        }
+      }
+
+      // Check news data (example: reports of shortages)
+      if (input.news && input.news.results && input.news.results.length > 0) {
+        const newsText = input.news.results
+          .map((result: { description: any }) => result.description)
+          .join(" ");
+        if (newsText.toLowerCase().includes("water restrictions")) {
+          risk = "High";
+          summary += " News reports indicate water restrictions.";
+        } else if (newsText.toLowerCase().includes("water shortage")) {
+          risk = "Medium";
+          summary += " News reports indicate water shortages.";
+        }
+      }
+
+      // Check climate data (example: drought conditions)
+      if (
+        input.climate &&
+        input.climate.results &&
+        input.climate.results.length > 0
+      ) {
+        const climateText =
+          typeof input.climate === "object"
+            ? JSON.stringify(input.climate)
+            : input.climate;
+        if (climateText.toLowerCase().includes("drought")) {
+          risk = "High";
+          summary += " Climate reports indicate drought conditions.";
+        }
+      }
+
+      // Add a more nuanced summary based on the combined data
+      if (risk === "Medium") {
+        summary =
+          `A medium risk of water shortage is predicted in ${input.location}.` +
+          summary;
+      } else if (risk === "High") {
+        summary =
+          `A high risk of water shortage is predicted in ${input.location}! ` +
+          summary;
+      } else {
+        summary =
+          `A low risk of water shortage is predicted in ${input.location}.` +
+          summary;
+      }
+
+      return { success: true, data: { risk: risk, summary: summary } };
+    } catch (error: any) {
+      return this.handleAgentError("WaterShortageForecastAgent", error);
+    }
+  }
+}
+
+// Export the Orchestrator Agent (the main entry point)
 export const createWaterForecastingAgent = async () => {
-  // Create a new agent workflow with the defined name
-  const workflow = new AgentWorkflow(workflowName);
-
-  // Define the LLM (now using WatsonxChatModel directly)
-  const llm = new WatsonxChatModel("ibm/granite-3-8b-instruct");
-
-  // Add a Researcher agent to look up information
-  workflow.addAgent({
-    name: "WaterResourceResearcher",
-    role: "An environmental scientist specializing in water resources",
-    instructions:
-      "You research and provide concise, accurate information about water availability, climate change impacts on water resources, and potential water shortage risks. Focus on factual data and reliable sources. Use a word limit of 70 words.",
-    tools: [new WikipediaTool(), new DuckDuckGoSearchTool()],
-    llm,
-  });
-
-  // Add a WeatherForecaster agent to provide weather reports
-  workflow.addAgent({
-    name: "LocalizedWeatherForecaster",
-    role: "A skilled weather reporter providing concise, location-specific forecasts",
-    instructions:
-      "You provide very concise & precise weather reports and forecasts, specifically tailored to the user's requested location. Use only Celsius values. Use a word limit of 60 words. If there is information asked out of your expertise, you should tell me politely i can't. Always return the results as an JSON which the properties 'message' describes the information and a property named 'highrisk : boolean'.",
-    tools: [new OpenMeteoTool()],
-    llm,
-  });
-
-  // Add a DataSynthesizer agent to combine information
-  workflow.addAgent({
-    name: "WaterShortageRiskAssessor",
-    role: "A water resources analyst specializing in risk asessment",
-    instructions:
-      "You assess the risk of water shortages based on weather data, resource availability, and other relevant factors. You will give your conclusions with a json which `riskLevel` can only be one of the three option (high, medium, low), it should give the information as a property called the `assessment`. You must be friendly with the users",
-    llm,
-  });
-
-  return workflow;
+  return new OrchestratorAgent();
 };
 
-// Export the function to create the Map Navigation agent
 export const createMapNavigationAgent = async () => {
-  // Define the LLM
-  const llm = new WatsonxChatModel("ibm/granite-3-8b-instruct");
-
-  return new ToolCallingAgent({
-    llm,
-    memory: new UnconstrainedMemory(),
-    tools: [],
-    meta: {
-      name: "MapNavigationAgent",
-      description:
-        "Extracts a location from user prompts related to navigation or map requests.",
-    },
-    templates: {
-      system: (template) =>
-        template.fork((config) => {
-          config.defaults.instructions = `You are an expert at identifying locations from user prompts. 
-          Your sole task is to extract the location. Do not provide any additional information or conversational text.
-          The output can only be the location.`;
-        }),
-    },
-  });
+  //returning a dummy response , no functionality implemented .
+  return {
+    run: async (p0: { prompt: string; }) => ({
+      result: {
+        text: "dummy",
+      },
+    }),
+  };
 };

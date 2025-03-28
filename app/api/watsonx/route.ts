@@ -11,7 +11,6 @@ interface RequestBody {
 }
 
 type ValidMessageRole = "user" | "assistant" | "system" | "tool";
-const idetifiers = ["navigate", "map", "move to", "set", "show", "locate"];
 const mapSenderRole = (sender: string): ValidMessageRole => {
   switch (sender) {
     case "user":
@@ -22,6 +21,8 @@ const mapSenderRole = (sender: string): ValidMessageRole => {
       return "system"; // Or handle the default case as needed
   }
 };
+
+const idetifiers = ["navigate", "map", "move to", "set", "show", "locate"];
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -49,10 +50,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     if (
-      // promptMessage.text.includes("navigate") ||
-      // promptMessage.text.includes("map") ||
-      // promptMessage.text.includes("move to") ||
-      // promptMessage.text.includes("set")
       idetifiers.some((keyword) =>
         promptMessage.text.toLowerCase().includes(keyword)
       )
@@ -67,16 +64,29 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ data: command });
     } else {
       // WATER FORECASTING AGENT
-      const workflow = await createWaterForecastingAgent();
-      const response = await workflow.run([
-        { prompt: promptMessage.text }, // all to create to one prompt.
-      ]);
-      return NextResponse.json({ data: response.result.finalAnswer });
+      const agent = await createWaterForecastingAgent();
+      const response = await agent.run(promptMessage.text); // pass the prompt
+
+      if (!response.success) {
+        // Handle the error case
+        console.error("watsonx AI Error", response.error);
+        return NextResponse.json({ error: response.error }, { status: 500 });
+      }
+
+      // Extract data and format response
+      const { messageText, mapCommands } = response.data;
+
+      return NextResponse.json({
+        data: {
+          messageText,
+          mapCommands,
+        },
+      });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("watsonx AI Error", error);
     return NextResponse.json(
-      { error: "Failed to interact with watsonx.ai" },
+      { error: `Failed to interact with watsonx.ai: ${error.message}` },
       { status: 500 }
     );
   }

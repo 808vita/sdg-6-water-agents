@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 interface Message {
   sender: string;
   text: string;
+  mapCommands?: { command: string; location: string }[];
 }
 
 interface ChatHookOptions {
@@ -21,14 +22,20 @@ const useChat = (options: ChatHookOptions = {}) => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const storedMessages = localStorage.getItem("chatMessages");
-    if (storedMessages) {
-      setMessages(JSON.parse(storedMessages));
+    // Load messages from local storage, but only on the client-side
+    if (typeof window !== "undefined") {
+      const storedMessages = localStorage.getItem("chatMessages");
+      if (storedMessages) {
+        setMessages(JSON.parse(storedMessages));
+      }
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("chatMessages", JSON.stringify(messages));
+    // Save messages to local storage, but only on the client-side
+    if (typeof window !== "undefined") {
+      localStorage.setItem("chatMessages", JSON.stringify(messages));
+    }
   }, [messages]);
 
   const handleSend = async () => {
@@ -61,7 +68,9 @@ const useChat = (options: ChatHookOptions = {}) => {
 
   const clearChat = () => {
     setMessages([{ sender: "bot", text: "Hello! How can I help you today?" }]); // Clear the messages state
-    localStorage.removeItem("chatMessages"); // Remove messages from local storage
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("chatMessages"); // Remove messages from local storage
+    }
   };
 
   return {

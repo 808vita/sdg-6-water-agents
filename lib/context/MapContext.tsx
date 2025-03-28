@@ -12,15 +12,20 @@ import React, {
 } from "react";
 import L from "leaflet";
 import { geocodeWithThrottle, reverseGeocode } from "@/lib/utils/map-utils";
-import { Message } from "beeai-framework/backend/core";
+import { Message, MessageContentPart } from "beeai-framework/backend/core";
+
+// Extend the Message interface to include mapCommands
+interface ChatMessage extends Message {
+  mapCommands?: { command: string; location: string }[];
+}
 
 interface MapContextProps {
   markers: MarkerState[];
   addMarker: (marker: MarkerState) => void;
   removeMarker: (id: string) => void;
   setMarkers: React.Dispatch<React.SetStateAction<MarkerState[]>>;
-  lastMessage: Message | null; // Added last message
-  setLastMessage: React.Dispatch<React.SetStateAction<Message | null>>;
+  lastMessage: ChatMessage | null; // Added last message
+  setLastMessage: React.Dispatch<React.SetStateAction<ChatMessage | null>>;
 }
 
 interface MapProviderProps {
@@ -50,8 +55,22 @@ export const MapProvider: React.FC<MapProviderProps> = ({
   children,
   initialLocations = [],
 }) => {
-  const [markers, setMarkers] = useState<MarkerState[]>(initialLocations);
-  const [lastMessage, setLastMessage] = useState<Message | null>(null);
+  const [markers, setMarkers] = useState<MarkerState[]>(() => {
+    // Get locally storage
+    if (typeof window !== "undefined") {
+      const storedMarkers = localStorage.getItem("mapMarkers");
+      return storedMarkers ? JSON.parse(storedMarkers) : initialLocations;
+    }
+    return initialLocations;
+  });
+  const [lastMessage, setLastMessage] = useState<ChatMessage | null>(null);
+
+  useEffect(() => {
+    // Persist data on local storage
+    if (typeof window !== "undefined") {
+      localStorage.setItem("mapMarkers", JSON.stringify(markers));
+    }
+  }, [markers]);
 
   const addMarker = useCallback((marker: MarkerState) => {
     setMarkers((prevMarkers) => [...prevMarkers, marker]);

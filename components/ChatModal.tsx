@@ -4,6 +4,12 @@
 import React, { useRef, useEffect } from "react";
 import useChat from "@/lib/hooks/useChat";
 import { useMapContext } from "@/lib/context/MapContext";
+import { Message, MessageContentPart } from "beeai-framework/backend/core";
+
+// Extend the Message interface to include mapCommands
+interface ChatMessage extends Message {
+  mapCommands?: { command: string; location: string }[];
+}
 
 const ChatModal = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -19,12 +25,18 @@ const ChatModal = () => {
             body: JSON.stringify({ messages }), // Send the chat history
           });
 
+          if (!response.ok) {
+            const errorData = await response.json(); // Parse error response
+            throw new Error(errorData.error || "Failed to send message.");
+          }
           const data = await response.json();
           return {
             sender: "bot",
-            text: data.data || "Sorry, I received an empty response.",
+            text:
+              data.data.messageText || "Sorry, I received an empty response.",
+            mapCommands: data.data.mapCommands,
           };
-        } catch (error) {
+        } catch (error: any) {
           return {
             sender: "bot",
             text: "Sorry, I could not connect to the AI backend. Please try again later.",
@@ -42,11 +54,15 @@ const ChatModal = () => {
   useEffect(() => {
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
+      // Verify if message can be parsed and there is mapCommands
       if (
-        lastMessage.text.startsWith("SET_MARKER|") &&
-        lastMessage.sender === "bot"
+        lastMessage.sender === "bot" &&
+        typeof lastMessage === "object" &&
+        lastMessage !== null &&
+        "mapCommands" in lastMessage &&
+        Array.isArray((lastMessage as ChatMessage).mapCommands)
       ) {
-        setLastMessage(lastMessage);
+        setLastMessage(lastMessage as ChatMessage);
         console.log(lastMessage);
       }
     }
