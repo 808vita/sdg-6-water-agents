@@ -11,7 +11,12 @@ import { Message } from "beeai-framework/backend/core";
 interface MapActionsProps {}
 
 interface ChatMessage extends Message {
-  mapCommands?: { command: string; location: string }[];
+  mapCommands?: {
+    command: string;
+    location: string;
+    risk?: string;
+    summary?: string;
+  }[];
 }
 
 const MapActions: React.FC<MapActionsProps> = () => {
@@ -26,6 +31,12 @@ const MapActions: React.FC<MapActionsProps> = () => {
         mapCommands.forEach((command) => {
           if (command.command === "SET_MARKER") {
             addMarkerFromCommand(command.location);
+          } else if (command.command === "UPDATE_MARKER") {
+            addMarkerFromCommand(
+              command.location,
+              command.risk,
+              command.summary
+            );
           }
           // Add other command handling logic here, e.g., "REMOVE_MARKER"
         });
@@ -33,7 +44,11 @@ const MapActions: React.FC<MapActionsProps> = () => {
     }
   }, [lastMessage, addMarker, map]);
 
-  const addMarkerFromCommand = async (locationName: string) => {
+  const addMarkerFromCommand = async (
+    locationName: string,
+    risk?: string,
+    summary?: string
+  ) => {
     const results = await geocodeWithThrottle(locationName);
     if (results && results.length > 0) {
       const { center, name, properties } = results[0];
@@ -42,7 +57,8 @@ const MapActions: React.FC<MapActionsProps> = () => {
         lng: center.lng,
         address: name,
         id: Date.now().toString(),
-        risk: "Unknown", // Set initial risk
+        risk: risk || "Unknown", // Set initial risk
+        summary: summary || "",
       };
       addMarker(newMarker);
       map.flyTo(

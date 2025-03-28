@@ -124,10 +124,11 @@ class OrchestratorAgent extends BaseAgent {
       );
 
       const mapCommands = [
-        { command: "SET_MARKER", location: location },
         {
-          command: "SET_POPUP",
-          content: `Water Shortage Risk: ${risk}\n${summary}`,
+          command: "UPDATE_MARKER",
+          location: location,
+          risk: risk,
+          summary: summary,
         },
       ];
 
@@ -354,8 +355,8 @@ export const createMapNavigationAgent = async () => {
     templates: {
       system: (template) =>
         template.fork((config) => {
-          config.defaults.instructions = `You are an expert at identifying locations from user prompts. 
-          Your sole task is to extract the location. After confirmation of extraction, proceed to search tool for the specified map. 
+          config.defaults.instructions = `You are an expert at identifying locations from user prompts.
+          Your sole task is to extract the location. After confirmation of extraction, proceed to search tool for the specified map.
           The output can only be the location. Do not provide any additional information or conversational text.`;
         }),
     },
