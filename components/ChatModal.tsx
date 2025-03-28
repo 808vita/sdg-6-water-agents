@@ -4,9 +4,9 @@
 import React, { useRef, useEffect } from "react";
 import useChat from "@/lib/hooks/useChat";
 import { useMapContext } from "@/lib/context/MapContext";
-import { Message } from "beeai-framework/backend/core";
+import { Message, MessageContentPart } from "beeai-framework/backend/core";
 
-// Define a more precise ChatMessage interface
+// Extend the Message interface to include mapCommands
 interface ChatMessage extends Message {
   mapCommands?: { command: string; location: string }[];
 }
@@ -22,17 +22,17 @@ const ChatModal = () => {
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ messages }),
+            body: JSON.stringify({ messages }), // Send the chat history
           });
 
           if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData?.error || "Failed to send message.");
+            const errorData = await response.json(); // Parse error response
+            throw new Error(errorData.error || "Failed to send message.");
           }
 
           const data = await response.json();
 
-          // Safely construct the ChatMessage object
+          // Create a ChatMessage object
           const chatMessage: ChatMessage = {
             sender: "bot",
             text:
@@ -40,21 +40,19 @@ const ChatModal = () => {
             mapCommands: data?.data?.mapCommands,
             role: "assistant", // Ensure role is always provided
             content: [], // Provide a default value of content
-          };
+          } as ChatMessage;
+
           return chatMessage;
         } catch (error: any) {
-          console.error("Error during onSend:", error); // Log the error for debugging
           return {
             sender: "bot",
             text: "Sorry, I could not connect to the AI backend. Please try again later.",
-            role: "assistant", // setting default
-            content: [], // setting default
           };
         }
       },
     });
 
-  const { setLastMessage, setMarkers } = useMapContext();
+  const { setLastMessage, setMarkers } = useMapContext(); // Access setMarkers from context
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -63,8 +61,7 @@ const ChatModal = () => {
   useEffect(() => {
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
-
-      // Safely check properties before using
+      // Verify if message can be parsed and there is mapCommands
       if (
         lastMessage?.sender === "bot" &&
         typeof lastMessage === "object" &&
@@ -72,9 +69,8 @@ const ChatModal = () => {
         "mapCommands" in lastMessage &&
         Array.isArray((lastMessage as ChatMessage).mapCommands)
       ) {
-        // Properly cast lastMessage to ChatMessage for type safety
         setLastMessage(lastMessage as ChatMessage);
-        console.log("Last Message:", lastMessage);
+        console.log(lastMessage);
       }
     }
   }, [messages, setLastMessage]);
@@ -83,7 +79,7 @@ const ChatModal = () => {
     clearChat(); // Clear the messages state
     setMarkers([]); // Clear the map markers
     if (typeof window !== "undefined") {
-      localStorage.removeItem("mapMarkers"); // Remove messages from local storage
+      localStorage.removeItem("mapMarkers"); // Clear map markers from local storage
     }
   };
 

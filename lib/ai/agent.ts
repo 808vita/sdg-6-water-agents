@@ -11,6 +11,7 @@ import {
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { Message, MessageContentPart } from "beeai-framework/backend/core";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { ToolCallingAgent } from "beeai-framework/agents/toolCalling/agent";
 
 // Define types for agent responses
 interface AgentResponse {
@@ -57,22 +58,26 @@ class OrchestratorAgent extends BaseAgent {
     this.memory = new UnconstrainedMemory(); // Initialize memory
   }
 
-  async run(userPrompt: string): Promise<AgentResponse> {
+  async run(
+    userPrompt: string,
+    chatHistory: Message[]
+  ): Promise<AgentResponse> {
     try {
-      // 1. Extract Location from user prompt (simple for POC, can improve later)
-      const location = this.extractLocation(userPrompt);
-      if (!location) {
-        return {
-          success: false,
-          data: null,
-          error: "Could not extract location from prompt.",
-        };
+      // 1. Extract Location from user prompt (Delegate to LLM)
+      const locationExtractionResponse = await this.extractLocation(
+        userPrompt,
+        chatHistory
+      );
+      if (!locationExtractionResponse.success) {
+        return locationExtractionResponse;
       }
+      const location = locationExtractionResponse.data;
 
       // Add user message to memory
       await this.memory.add(
         Message.of({ sender: "user", text: userPrompt, role: "user" })
       );
+
       // 2. Call Data Collection Agents
       const weatherResponse = await this.weatherAgent.run(location);
       const newsResponse = await this.newsAgent.run(location);
@@ -140,16 +145,31 @@ class OrchestratorAgent extends BaseAgent {
     }
   }
 
-  // IMPROVED LOCATION EXTRACTION (still basic, can be enhanced further)
-  private extractLocation(prompt: string): string | null {
-    const locationKeywords = ["in", "at", "near", "for"];
-    for (const keyword of locationKeywords) {
-      const index = prompt.toLowerCase().indexOf(keyword + " ");
-      if (index > -1) {
-        return prompt.substring(index + keyword.length + 1).trim();
-      }
+  // LOCATION EXTRACTOR Agent
+  private async extractLocation(
+    prompt: string,
+    chatHistory: Message[]
+  ): Promise<AgentResponse> {
+    try {
+      const response = await this.llm.create({
+        messages: [
+          ...chatHistory.slice(-3), // Include last 3 messages from chat history
+          Message.of({
+            role: "system",
+            text: "You are an expert at identifying locations from user prompts. Your sole task is to extract the location. The output can only be the location. Do not provide any additional information or conversational text.",
+          }),
+          Message.of({ role: "user", text: prompt }),
+        ],
+      });
+      const extractedLocation = response.getTextContent().trim();
+      return { success: true, data: extractedLocation };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: null,
+        error: `Location Extraction failed: ${error.message}`,
+      };
     }
-    return prompt.trim(); // If no keyword is found, return the entire prompt as location
   }
 }
 
@@ -320,12 +340,24 @@ export const createWaterForecastingAgent = async () => {
 };
 
 export const createMapNavigationAgent = async () => {
-  //returning a dummy response , no functionality implemented .
-  return {
-    run: async () => ({
-      result: {
-        text: "dummy",
-      },
-    }),
-  };
+  // Configuration for the ToolCallingAgent
+  const llm = new WatsonxChatModel("ibm/granite-3-8b-instruct");
+  return new ToolCallingAgent({
+    llm,
+    memory: new UnconstrainedMemory(),
+    tools: [new DuckDuckGoSearchTool()], // A tool to be used
+    meta: {
+      name: "MapNavigationAgent",
+      description:
+        "Extracts a location from user prompts related to navigation or map requests, then can search the map for a specific location.",
+    },
+    templates: {
+      system: (template) =>
+        template.fork((config) => {
+          config.defaults.instructions = `You are an expert at identifying locations from user prompts. 
+          Your sole task is to extract the location. After confirmation of extraction, proceed to search tool for the specified map. 
+          The output can only be the location. Do not provide any additional information or conversational text.`;
+        }),
+    },
+  });
 };

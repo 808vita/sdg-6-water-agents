@@ -1,37 +1,48 @@
 // lib/hooks/useChat.ts
 import { useState, useEffect } from "react";
+import {
+  Message,
+  UserMessage,
+  AssistantMessage,
+} from "beeai-framework/backend/core";
 
-interface Message {
+// Extend the Message interface to include mapCommands
+interface ChatMessage extends Message {
   sender: string;
   text: string;
   mapCommands?: { command: string; location: string }[];
-  role?: string;
-  content?: any;
 }
 
 interface ChatHookOptions {
-  initialMessages?: Message[];
-  onSend?: (message: Message[]) => Promise<Message | void>;
+  initialMessages?: ChatMessage[];
+  onSend?: (message: ChatMessage[]) => Promise<ChatMessage | void>;
 }
 
 const useChat = (options: ChatHookOptions = {}) => {
-  const [messages, setMessages] = useState<Message[]>(
-    options.initialMessages || [
-      { sender: "bot", text: "Hello! How can I help you today?" },
-    ]
-  );
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    // Load messages from local storage
-    if (typeof window !== "undefined") {
-      const storedMessages = localStorage.getItem("chatMessages");
-      if (storedMessages) {
-        setMessages(JSON.parse(storedMessages));
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const storedMessages =
+      typeof window !== "undefined"
+        ? localStorage.getItem("chatMessages")
+        : null;
+    if (storedMessages) {
+      try {
+        return JSON.parse(storedMessages);
+      } catch (e) {
+        console.warn("Failed to parse stored messages", e);
+        return [];
       }
     }
-  }, []);
+    return (options.initialMessages || [
+      {
+        sender: "bot",
+        text: "Hello! How can I help you today?",
+        role: "assistant",
+        content: [],
+      },
+    ]) as ChatMessage[];
+  });
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     // Save messages to local storage
@@ -43,14 +54,23 @@ const useChat = (options: ChatHookOptions = {}) => {
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { sender: "user", text: input };
+    const userMessage: ChatMessage = {
+      sender: "user",
+      text: input,
+      role: "user",
+      content: [],
+    };
+
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
       if (options.onSend) {
-        const botMessage = await options.onSend([...messages, userMessage]);
+        const botMessage = (await options.onSend([
+          ...messages,
+          userMessage,
+        ])) as ChatMessage;
         if (botMessage) {
           setMessages((prev) => [...prev, botMessage]);
         }
@@ -61,6 +81,8 @@ const useChat = (options: ChatHookOptions = {}) => {
         {
           sender: "bot",
           text: "Sorry, I could not connect to the AI backend. Please try again later.",
+          role: "assistant",
+          content: [],
         },
       ]);
     } finally {
@@ -69,7 +91,14 @@ const useChat = (options: ChatHookOptions = {}) => {
   };
 
   const clearChat = () => {
-    setMessages([{ sender: "bot", text: "Hello! How can I help you today?" }]); // Clear the messages state
+    setMessages([
+      {
+        sender: "bot",
+        text: "Hello! How can I help you today?",
+        role: "assistant",
+        content: [],
+      },
+    ]); // Clear the messages state
     if (typeof window !== "undefined") {
       localStorage.removeItem("chatMessages"); // Remove messages from local storage
     }

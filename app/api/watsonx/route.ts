@@ -65,7 +65,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     } else {
       // WATER FORECASTING AGENT
       const agent = await createWaterForecastingAgent();
-      const response = await agent.run(promptMessage.text); // pass the prompt
+      const response = await agent.run(promptMessage.text, finalMessages); // pass the prompt and the chat history
 
       if (!response.success) {
         // Handle the error case
