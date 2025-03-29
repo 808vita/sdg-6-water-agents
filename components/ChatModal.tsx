@@ -214,9 +214,7 @@ const ChatModal = () => {
     <div className="fixed bottom-4 right-4 w-[28rem] bg-white border border-gray-300 rounded-lg shadow-xl flex flex-col overflow-y-auto max-h-3/4">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-gray-100 rounded-t-lg">
-        <h2 className="font-semibold text-lg text-gray-800">
-          Customer Support
-        </h2>
+        <h2 className="font-semibold text-lg text-gray-800">Chat With AI Agent</h2>
         <button
           onClick={handleClearChat}
           className="bg-red-500 hover:bg-red-600 text-white text-sm rounded px-3 py-2 transition-colors duration-200"
