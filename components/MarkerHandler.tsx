@@ -81,7 +81,7 @@ function MarkerHandler({ markers, setMarkers }: MarkerHandlerProps) {
     [lastGeocodeTime, map, setMarkers]
   );
 
-  const handleMapDblClick = (e: L.LeafletMouseEvent) => {
+  /*const handleMapDblClick = (e: L.LeafletMouseEvent) => {
     const { lat, lng } = e.latlng;
 
     const newMarker = {
@@ -94,20 +94,26 @@ function MarkerHandler({ markers, setMarkers }: MarkerHandlerProps) {
 
     setMarkers((prevMarkers) => [...prevMarkers, newMarker]);
     getReverseGeocoding(lat, lng, newMarker.id);
+  };*/
+
+  const handleMapClick = (e: L.LeafletMouseEvent) => {
+    console.log("Map clicked at:", e.latlng);
   };
 
   useEffect(() => {
     // Attach the event listener directly to the map instance
-    map.on("dblclick", handleMapDblClick);
+    //map.on("dblclick", handleMapDblClick);
+    map.on("click", handleMapClick);
 
     // Clean up the event listener when the component unmounts
     return () => {
-      map.off("dblclick", handleMapDblClick);
+      //map.off("dblclick", handleMapDblClick);
       if (geocodeTimeoutId.current) {
         clearTimeout(geocodeTimeoutId.current);
       }
+      map.off("click", handleMapClick);
     };
-  }, [handleMapDblClick, map]);
+  }, [handleMapClick, map]);
 
   return null;
 }
