@@ -332,6 +332,12 @@ const ChatModal = () => {
                       value={customPrompt}
                       onChange={(e) => setCustomPrompt(e.target.value)}
                       className="flex-1 border rounded py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault(); // Prevent form submission if inside a form
+                          handleCustomPromptSend();
+                        }
+                      }}
                     />
                     <button
                       onClick={handleCustomPromptSend}
