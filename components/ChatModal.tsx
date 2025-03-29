@@ -16,11 +16,11 @@ const ChatModal = () => {
   const {
     messages,
     input,
-    isLoading,
     setInput: baseSetInput,
     handleSend: baseHandleSend,
     sendPrompt,
     clearChat,
+    isLoading, // Added isLoading from useChat hook
   } = useChat({
     onSend: async (messages) => {
       try {
@@ -98,7 +98,7 @@ const ChatModal = () => {
         selectedPlace !== "" && setNavigationDone(true); // Enable subsequent prompts
       }
     }
-  }, [messages, setLastMessage]);
+  }, [messages, setLastMessage, selectedPlace]); //Added selectedPlace to dependencies
 
   const handleClearChat = () => {
     clearChat();
@@ -211,63 +211,71 @@ const ChatModal = () => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 w-96 bg-gray-50 border border-gray-300 rounded-lg shadow-xl flex flex-col overflow-y-scroll max-h-3/4">
-      <div className="flex items-center justify-between p-4 border-b bg-gray-100">
-        <h2 className="font-semibold text-gray-800">Customer Support</h2>
+    <div className="fixed bottom-4 right-4 w-[28rem] bg-white border border-gray-300 rounded-lg shadow-xl flex flex-col overflow-y-auto max-h-3/4">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-gray-100 rounded-t-lg">
+        <h2 className="font-semibold text-lg text-gray-800">
+          Customer Support
+        </h2>
         <button
           onClick={handleClearChat}
-          className="bg-red-500 hover:bg-red-600 text-white text-xs rounded p-2 cursor-pointer"
+          className="bg-red-500 hover:bg-red-600 text-white text-sm rounded px-3 py-2 transition-colors duration-200"
         >
           Clear Chat
         </button>
       </div>
 
-      <div className="flex-1 p-4 space-y-4 ">
+      {/* Chat Messages */}
+      <div className="flex-1 p-4 space-y-3 overflow-y-auto">
         {messages.map((message, index) => (
           <div
             key={index}
-            className={`text-sm rounded-lg p-3 max-w-fit ${
+            className={`rounded-lg py-2 px-3 max-w-fit break-words ${
               message.sender === "user"
-                ? "bg-blue-100 text-blue-800 justify-self-end"
-                : "bg-gray-100 text-gray-800 justify-self-start"
+                ? "bg-blue-100 text-blue-800 ml-auto"
+                : "bg-gray-100 text-gray-800 mr-auto"
             }`}
           >
-            <span className="font-semibold mx-0.5">
-              {message.sender === "user" ? "You" : "Bot"}:
+            <span className="font-semibold mr-1">
+              {message.sender === "user" ? "You:" : "Bot:"}
             </span>
             {message.text}
           </div>
         ))}
         <div ref={messagesEndRef} />
         {isLoading && (
-          <div className="flex space-x-2 animate-pulse text-blue-700">
-            {processingMessage}
-            <div>.</div>
-            <div>.</div>
-            <div>.</div>
+          <div className="flex items-center space-x-2 animate-pulse text-blue-700">
+            <p>{processingMessage}</p>
+            <div className="animate-bounce h-2 w-2 bg-blue-700 rounded-full"></div>
+            <div className="animate-bounce h-2 w-2 bg-blue-700 rounded-full delay-100"></div>
+            <div className="animate-bounce h-2 w-2 bg-blue-700 rounded-full delay-200"></div>
           </div>
         )}
       </div>
 
-      <div className="p-4 border-t">
+      {/* Input Area */}
+      <div className="p-4 border-t bg-gray-50 rounded-b-lg">
         {!navigationDone ? (
+          // Initial Navigation Prompt
           <>
             {!showPlaceNameInput ? (
               <button
                 onClick={() => handleSend(initialPrompt)}
-                className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50"
+                className="w-full bg-blue-500 hover:bg-blue-700 text-white rounded py-2 px-4 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isLoading}
               >
                 {initialPrompt}
               </button>
             ) : (
-              <>
+              // Place Selection Input
+              <div className="flex items-center space-x-2">
                 <select
                   value={selectedPlace}
                   onChange={(e) => {
                     setSelectedPlace(e.target.value);
                     setInput(`Navigate to ${e.target.value}`); // Set input for display purposes
                   }}
-                  className="flex-1 border rounded p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 border rounded py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select a place</option>
                   {predefinedPlaces.map((place) => (
@@ -279,14 +287,15 @@ const ChatModal = () => {
                 <button
                   onClick={() => handleSend()}
                   disabled={isLoading || selectedPlace === ""}
-                  className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50 ml-2"
+                  className="bg-blue-500 hover:bg-blue-700 text-white rounded py-2 px-4 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Send
                 </button>
-              </>
+              </div>
             )}
           </>
         ) : (
+          // Subsequent Prompts and Custom Prompt
           <>
             {!isChangingLocation ? (
               <div className="flex flex-wrap gap-2">
@@ -300,7 +309,8 @@ const ChatModal = () => {
                           prompt.replace("[Place Name]", selectedPlace)
                         );
                       }}
-                      className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50"
+                      className="bg-blue-500 hover:bg-blue-700 text-white rounded py-1 px-2 text-xs transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isLoading}
                     >
                       {prompt.replace("[Place Name]", selectedPlace)}
                     </button>
@@ -309,7 +319,7 @@ const ChatModal = () => {
                   onClick={() =>
                     setShowCustomPromptInput(!showCustomPromptInput)
                   }
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 rounded p-2"
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 rounded py-1 px-2 text-xs transition-colors duration-200 mb-2"
                 >
                   {showCustomPromptInput
                     ? "Hide Custom Prompt"
@@ -317,18 +327,18 @@ const ChatModal = () => {
                 </button>
 
                 {showCustomPromptInput && (
-                  <div className="flex items-center mt-2">
+                  <div className="flex items-center space-x-2 mt-2">
                     <input
                       type="text"
                       placeholder="Enter your custom prompt"
                       value={customPrompt}
                       onChange={(e) => setCustomPrompt(e.target.value)}
-                      className="flex-1 border rounded p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 border rounded py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <button
                       onClick={handleCustomPromptSend}
                       disabled={isLoading || !customPrompt.trim()}
-                      className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50 ml-2"
+                      className="bg-blue-500 hover:bg-blue-700 text-white rounded py-2 px-4 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Send
                     </button>
@@ -336,16 +346,17 @@ const ChatModal = () => {
                 )}
               </div>
             ) : (
+              // Changing Location Input
               <>
                 {showPlaceNameInput ? (
-                  <>
+                  <div className="flex items-center space-x-2">
                     <select
                       value={selectedPlace}
                       onChange={(e) => {
                         setSelectedPlace(e.target.value);
                         setInput(`Navigate to ${e.target.value}`); // Set input for display purposes
                       }}
-                      className="flex-1 border rounded p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 border rounded py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select a place</option>
                       {predefinedPlaces.map((place) => (
@@ -357,36 +368,35 @@ const ChatModal = () => {
                     <button
                       onClick={() => handleSend()}
                       disabled={isLoading || selectedPlace === ""}
-                      className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50 ml-2"
+                      className="bg-blue-500 hover:bg-blue-700 text-white rounded py-2 px-4 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Send
                     </button>
-                  </>
+                  </div>
                 ) : (
-                  <>
-                    <button
-                      onClick={() => setShowPlaceNameInput(true)}
-                      className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50"
-                    >
-                      Change Map Location
-                    </button>
-                  </>
+                  <button
+                    onClick={() => setShowPlaceNameInput(true)}
+                    className="w-full bg-blue-500 hover:bg-blue-700 text-white rounded py-2 px-4 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isLoading}
+                  >
+                    Change Map Location
+                  </button>
                 )}
               </>
             )}
+            {/* Conditionally render these buttons */}
             {navigationDone && !isChangingLocation && (
-              <>
-                <button
-                  onClick={() => {
-                    setIsChangingLocation(true);
-                    setShowPlaceNameInput(true); // Show the location input
-                    setInput("Change map location to [New Place Name]"); // Optionally set the input
-                  }}
-                  className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50"
-                >
-                  Change Map Location
-                </button>
-              </>
+              <button
+                onClick={() => {
+                  setIsChangingLocation(true);
+                  setShowPlaceNameInput(true); // Show the location input
+                  setInput("Change map location to [New Place Name]"); // Optionally set the input
+                }}
+                className="w-full bg-blue-500 hover:bg-blue-700 text-white rounded py-2 px-4 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isLoading}
+              >
+                Change Map Location
+              </button>
             )}
           </>
         )}
