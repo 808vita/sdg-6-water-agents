@@ -19,7 +19,7 @@ const dummyLocations = [
 
 export default function Home() {
   return (
-    <div className="flex flex-col max-h-screen bg-gray-100">
+    <div className="flex flex-col min-h-screen bg-gray-100">
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900">
@@ -31,11 +31,11 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-grow">
-        <div className="max-w-11/12 mx-0 py-4 px-2 sm:px-0 lg:px-2 grid grid-cols-3 gap-0.5">
-          <div className="col-span-2">
+        <div className="max-w-7xl mx-auto py-4 px-2 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2">
             <MapComponent initialLocations={dummyLocations} />
           </div>
-          <div className="col-span-1">
+          <div className="md:col-span-1">
             <ChatModal />
           </div>
         </div>
