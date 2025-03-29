@@ -402,6 +402,14 @@ class RiskAssessmentAgent extends BaseAgent {
   }
 }
 
+// NEW: Define a type for the Risk Assessment Data for better type safety
+interface RiskAssessmentData {
+  risk: string;
+  summary: string;
+  reasoning: any; // Or potentially `any` or a specific type if the structure is well-defined
+  sources: string[];
+}
+
 // 5. Water Shortage Forecast Agent (Modified)
 class WaterShortageForecastAgent extends BaseAgent {
   private riskAssessmentAgent: RiskAssessmentAgent;
@@ -469,13 +477,28 @@ class WaterShortageForecastAgent extends BaseAgent {
         return assessmentResponse;
       }
 
-      const { risk, summary, reasoning, sources } = assessmentResponse.data;
+      //  Safely parse the assessment data using the type and JSON.stringify
+      let assessment: RiskAssessmentData;
+      try {
+        assessment = JSON.parse(
+          jsonrepair(JSON.stringify(assessmentResponse.data))
+        );
+      } catch (parseError: any) {
+        console.error("Error parsing assessment data:", parseError);
+        return {
+          success: false,
+          data: null,
+          error: `Failed to parse risk assessment data: ${parseError.message}`,
+        };
+      }
+
+      const { risk, summary, reasoning, sources } = assessment;
 
       const messageText = `The water shortage risk in ${
         input.location
-      } is ${risk}. ${summary}\n\n${details}\n\nReasoning: ${reasoning}\n\nSources: ${sources.join(
-        ", "
-      )}`;
+      } is ${risk}. ${summary}\n\n${details}\n\nReasoning: ${
+        typeof reasoning === "string" ? reasoning : JSON.stringify(reasoning)
+      }\n\nSources: ${sources.join(", ")}`;
 
       const mapCommands = [
         {
