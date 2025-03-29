@@ -12,7 +12,7 @@ import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { Message, MessageContentPart } from "beeai-framework/backend/core";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { ToolCallingAgent } from "beeai-framework/agents/toolCalling/agent";
-
+import { jsonrepair } from "jsonrepair";
 // Define types for agent responses
 interface AgentResponse {
   success: boolean;
@@ -204,7 +204,7 @@ class OrchestratorAgent extends BaseAgent {
         ],
       });
 
-      const intent = JSON.parse(response.getTextContent().trim());
+      const intent = JSON.parse(jsonrepair(response.getTextContent().trim()));
       return intent;
     } catch (error: any) {
       console.error("Intent Recognition error:", error);
@@ -264,9 +264,16 @@ class WeatherAgent extends BaseAgent {
 
       console.log("OpenMeteoTool response:", weatherData); // ADDED
 
-      const messageText = `Current weather in ${location}: ${JSON.stringify(
-        weatherData.result
-      )}`; // More informative
+      const { current, daily } = weatherData.result;
+
+      const messageText = `Current weather in ${location}:
+      Temperature: ${current.temperature_2m}°C
+      Relative Humidity: ${current.relative_humidity_2m}%
+      Wind Speed: ${current.wind_speed_10m} km/h
+      Rainfall Today: ${daily.rain_sum[0]} mm
+      Maximum Temperature Today: ${daily.temperature_2m_max[0]}°C
+      Minimum Temperature Today: ${daily.temperature_2m_min[0]}°C
+      `;
       return {
         success: true,
         data: { messageText, weatherData: weatherData.result },
@@ -385,7 +392,9 @@ class RiskAssessmentAgent extends BaseAgent {
         ],
       });
 
-      const assessment = JSON.parse(response.getTextContent().trim());
+      const assessment = JSON.parse(
+        jsonrepair(response.getTextContent().trim())
+      );
       return { success: true, data: assessment };
     } catch (error: any) {
       return this.handleAgentError("RiskAssessmentAgent", error);
