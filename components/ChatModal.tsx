@@ -152,6 +152,52 @@ const ChatModal = () => {
     setNewPlaceName("");
   };
 
+  const [processingMessage, setProcessingMessage] = useState("Thinking");
+
+  useEffect(() => {
+    if (isLoading) {
+      const processingWords = [
+        "Thinking",
+        "Consulting Watsonx",
+        "Searching",
+        "Reading",
+        "Extracting",
+        "Reading Tea Leaves",
+        "Analyzing",
+        "Generating",
+        "Debating with Itself",
+        "Forecasting",
+        "Calculating",
+        "Consulting the Magic 8-Ball",
+        "Predicting",
+        "Assessing",
+        "Evaluating",
+        "Gathering Data",
+        "Compiling Results",
+        "Avoiding Skynet Activation",
+        "Interpreting Data",
+        "Formulating Response",
+        "Channeling Alan Turing",
+        "Consulting Sources",
+        "Wrangling Data",
+        "Retrieving Information",
+        "Validating Information",
+        "Estimating Risk",
+        "Investigating",
+        "Brewing Coffee (for the AI)",
+      ];
+      let i = 0;
+      const intervalId = setInterval(() => {
+        setProcessingMessage(processingWords[i % processingWords.length]);
+        i++;
+      }, 1500);
+
+      return () => clearInterval(intervalId); // Clear interval on unmount or isLoading change
+    } else {
+      setProcessingMessage("Thinking"); // Reset to default message when not loading
+    }
+  }, [isLoading]);
+
   return (
     <div className="fixed bottom-4 right-4 w-96 bg-gray-50 border border-gray-300 rounded-lg shadow-xl flex flex-col overflow-y-scroll max-h-3/4">
       <div className="flex items-center justify-between p-4 border-b bg-gray-100">
@@ -183,7 +229,7 @@ const ChatModal = () => {
         <div ref={messagesEndRef} />
         {isLoading && (
           <div className="flex space-x-2 animate-pulse text-blue-700">
-            Thinking
+            {processingMessage}
             <div>.</div>
             <div>.</div>
             <div>.</div>
