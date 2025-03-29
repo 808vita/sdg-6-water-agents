@@ -70,18 +70,11 @@ const ChatModal = () => {
 
   const [showPlaceNameInput, setShowPlaceNameInput] = useState(false);
 
-  const predefinedPlaces = [
-    "Mumbai",
-    "Bengaluru",
-    "Hyderabad",
-    "Chennai",
-    "Delhi",
-  ];
+  const predefinedPlaces = ["Mumbai", "Hyderabad", "Chennai", "Delhi"];
 
   const subsequentPrompts = [
     "Get current weather for [Place Name]",
     "Water shortage risk in [Place Name]",
-    "Places in [Place Name] affected by shortage",
     "Change map location to [New Place Name]",
   ];
 
