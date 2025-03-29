@@ -69,6 +69,8 @@ const ChatModal = () => {
   const [newPlaceName, setNewPlaceName] = useState("");
 
   const [showPlaceNameInput, setShowPlaceNameInput] = useState(false);
+  const [showCustomPromptInput, setShowCustomPromptInput] = useState(false); // New state for custom prompt input
+  const [customPrompt, setCustomPrompt] = useState(""); // State for custom prompt text
 
   const predefinedPlaces = ["Mumbai", "Hyderabad", "Chennai", "Delhi"];
 
@@ -150,6 +152,8 @@ const ChatModal = () => {
 
     // Reset input after sending
     setNewPlaceName("");
+    setCustomPrompt(""); // Clear custom prompt input as well
+    setShowCustomPromptInput(false); // hide input after send
   };
 
   const [processingMessage, setProcessingMessage] = useState("Thinking");
@@ -197,6 +201,14 @@ const ChatModal = () => {
       setProcessingMessage("Thinking"); // Reset to default message when not loading
     }
   }, [isLoading]);
+
+  const handleCustomPromptSend = () => {
+    if (customPrompt.trim()) {
+      sendPrompt(customPrompt); // Use sendPrompt
+      setCustomPrompt("");
+      setShowCustomPromptInput(false);
+    }
+  };
 
   return (
     <div className="fixed bottom-4 right-4 w-96 bg-gray-50 border border-gray-300 rounded-lg shadow-xl flex flex-col overflow-y-scroll max-h-3/4">
@@ -293,6 +305,35 @@ const ChatModal = () => {
                       {prompt.replace("[Place Name]", selectedPlace)}
                     </button>
                   ))}
+                <button
+                  onClick={() =>
+                    setShowCustomPromptInput(!showCustomPromptInput)
+                  }
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 rounded p-2"
+                >
+                  {showCustomPromptInput
+                    ? "Hide Custom Prompt"
+                    : "Custom Prompt"}
+                </button>
+
+                {showCustomPromptInput && (
+                  <div className="flex items-center mt-2">
+                    <input
+                      type="text"
+                      placeholder="Enter your custom prompt"
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      className="flex-1 border rounded p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={handleCustomPromptSend}
+                      disabled={isLoading || !customPrompt.trim()}
+                      className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50 ml-2"
+                    >
+                      Send
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <>
