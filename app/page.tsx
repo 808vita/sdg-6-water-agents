@@ -31,7 +31,7 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-grow">
-        <div className="max-w-7xl mx-auto py-4 px-2 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="max-w-7xl mx-auto md:mx-0 py-4 px-2 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
             <MapComponent initialLocations={dummyLocations} />
           </div>

@@ -6,7 +6,7 @@ import "leaflet/dist/leaflet.css";
 import { LatLngExpression } from "leaflet";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import MarkerHandler, { MarkerState } from "./MarkerHandler";
-import { useMapContext } from "@/lib/context/MapContext"; // Access context values
+import { useMapContext } from "@/lib/context/MapContext";
 
 import "leaflet-control-geocoder/dist/Control.Geocoder.css";
 import "leaflet-control-geocoder";
@@ -26,28 +26,11 @@ L.Icon.Default.mergeOptions({
   shadowUrl: shadowUrl.src,
 });
 
-interface MapProps {
-  //initialLocations: Location[]; // Removed initialLocations
-}
-
-interface Location {
-  lat: number;
-  lng: number;
-  risk: string;
-  address?: string | null; // Add address to the location type
-}
+interface MapProps {}
 
 const MapComponent: React.FC<MapProps> = () => {
-  const position: LatLngExpression = [51.5074, 0.1278]; // Default map center
-  const { markers, removeMarker, setMarkers } = useMapContext(); // Access context values
-
-  //  useEffect(() => {
-  //   setMarkers(initialLocations);
-  // }, [initialLocations]);
-
-  // const removeMarker = (id: string) => {
-  //  setMarkers(markers.filter((marker) => marker.id !== id));
-  // };
+  const position: LatLngExpression = [51.5074, 0.1278];
+  const { markers, removeMarker, setMarkers } = useMapContext();
 
   useEffect(() => {
     console.log("markers", markers);
@@ -57,7 +40,7 @@ const MapComponent: React.FC<MapProps> = () => {
     <MapContainer
       center={position}
       zoom={2}
-      style={{ height: "500px", width: "100%" }}
+      className="map-container" // Apply the CSS class
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
