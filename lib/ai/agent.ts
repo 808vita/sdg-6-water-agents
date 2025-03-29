@@ -498,7 +498,7 @@ class WaterShortageForecastAgent extends BaseAgent {
         input.location
       } is ${risk}. ${summary}\n\n${details}\n\nReasoning: ${
         typeof reasoning === "string" ? reasoning : JSON.stringify(reasoning)
-      }\n\nSources: ${sources.join(", ")}`;
+      }\n\nSources: ${(Array.isArray(sources) ? sources : []).join(", ")}`;
 
       const mapCommands = [
         {
