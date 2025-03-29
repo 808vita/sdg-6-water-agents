@@ -60,9 +60,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
       // Parse structured action from agent's final answer
       const location = response.result.text; // e.g., Malaysia, Chennai, Delhi
-      //const command = `SET_MARKER|${location}`; // Format: "SET_MARKER|Location"
+
       return NextResponse.json({
-        data: { mapCommands: [{ command: "SET_MARKER", location: location }] },
+        data: {
+          messageText: `Navigating to ${location}`, // added message text
+          mapCommands: [{ command: "SET_MARKER", location: location }],
+        },
       });
     } else {
       // WATER FORECASTING AGENT
