@@ -250,38 +250,56 @@ const ChatModal = () => {
               </div>
             ) : (
               <>
-                <input
-                  type="text"
-                  value={newPlaceName}
-                  onChange={(e) => setNewPlaceName(e.target.value)}
-                  placeholder="Enter new place name..."
-                  className="flex-1 border rounded p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  onClick={() =>
-                    handleSend(
-                      subsequentPrompts.find((prompt) =>
-                        prompt.startsWith("Change map location")
-                      ) || ""
-                    )
-                  }
-                  disabled={isLoading || newPlaceName === ""}
-                  className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50 ml-2"
-                >
-                  Change Location
-                </button>
+                {showPlaceNameInput ? (
+                  <>
+                    <select
+                      value={selectedPlace}
+                      onChange={(e) => {
+                        setSelectedPlace(e.target.value);
+                        setInput(`Navigate to ${e.target.value}`); // Set input for display purposes
+                      }}
+                      className="flex-1 border rounded p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select a place</option>
+                      {predefinedPlaces.map((place) => (
+                        <option key={place} value={place}>
+                          {place}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => handleSend()}
+                      disabled={isLoading || selectedPlace === ""}
+                      className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50 ml-2"
+                    >
+                      Send
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setShowPlaceNameInput(true)}
+                      className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50"
+                    >
+                      Change Map Location
+                    </button>
+                  </>
+                )}
               </>
             )}
             {navigationDone && !isChangingLocation && (
-              <button
-                onClick={() => {
-                  setIsChangingLocation(true);
-                  setInput("Change map location to [New Place Name]");
-                }}
-                className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50"
-              >
-                Change Map Location
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    setIsChangingLocation(true);
+                    setShowPlaceNameInput(true); // Show the location input
+                    setInput("Change map location to [New Place Name]"); // Optionally set the input
+                  }}
+                  className="bg-blue-500 hover:bg-blue-700 text-white rounded p-2 disabled:opacity-50"
+                >
+                  Change Map Location
+                </button>
+              </>
             )}
           </>
         )}
