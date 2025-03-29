@@ -19,30 +19,33 @@ interface ChatHookOptions {
 }
 
 const useChat = (options: ChatHookOptions = {}) => {
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    options.initialMessages || [
+      {
+        sender: "bot",
+        text: "Hello! How can I help you today?",
+        role: "assistant",
+        content: [],
+      } as ChatMessage,
+    ]
+  );
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Load messages from local storage after the component has mounted
     const storedMessages =
       typeof window !== "undefined"
         ? localStorage.getItem("chatMessages")
         : null;
     if (storedMessages) {
       try {
-        return JSON.parse(storedMessages);
+        setMessages(JSON.parse(storedMessages));
       } catch (e) {
         console.warn("Failed to parse stored messages", e);
-        return [];
       }
     }
-    return (options.initialMessages || [
-      {
-        sender: "bot",
-        text: "Hello! How can I help you today?",
-        role: "assistant",
-        content: [],
-      },
-    ]) as ChatMessage[];
-  });
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  }, []); // Run only once after mounting
 
   useEffect(() => {
     // Save messages to local storage
