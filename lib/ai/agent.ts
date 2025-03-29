@@ -267,7 +267,10 @@ class WeatherAgent extends BaseAgent {
       const messageText = `Current weather in ${location}: ${JSON.stringify(
         weatherData.result
       )}`; // More informative
-      return { success: true, data: { messageText } }; //Standardize data format to include messageText
+      return {
+        success: true,
+        data: { messageText, weatherData: weatherData.result },
+      }; // Enhanced data
     } catch (error: any) {
       return this.handleAgentError("WeatherAgent", error);
     }
@@ -337,8 +340,8 @@ class ClimateResearcher extends BaseAgent {
   }
 }
 
-// 5. Water Shortage Forecast Agent
-class WaterShortageForecastAgent extends BaseAgent {
+// NEW: 6. Risk Assessment Agent
+class RiskAssessmentAgent extends BaseAgent {
   async run(
     input: {
       weather: any;
@@ -349,82 +352,123 @@ class WaterShortageForecastAgent extends BaseAgent {
     chatHistory?: Message[]
   ): Promise<AgentResponse> {
     try {
-      // *** IMPROVED RISK ASSESSMENT LOGIC ***
-      let risk = "Low";
-      let summary =
-        "Based on available data, the risk of water shortage is currently low.";
+      const riskAssessmentPrompt = `You are an expert at assessing water shortage risk based on weather, news, and climate data for a given location.
+            Analyze the following data and determine the water shortage risk level (Low, Medium, or High). Provide a detailed explanation of your reasoning, citing specific evidence from the data.
+            Also provide links to relevant source
 
+            Weather Data: ${JSON.stringify(input.weather)}
+            News Data: ${JSON.stringify(input.news)}
+            Climate Data: ${JSON.stringify(input.climate)}
+            Location: ${input.location}
+
+            Respond with a JSON object containing:
+            - "risk": (Low, Medium, or High)
+            - "summary": A short summary of the risk assessment.
+            - "reasoning": A detailed explanation of your reasoning, citing evidence.
+            - "sources": An array of URLs to relevant sources.
+
+            Example:
+            {
+                "risk": "Medium",
+                "summary": "The water shortage risk in London is medium due to low rainfall and some concerning news reports.",
+                "reasoning": "Rainfall has been low in the past week (cite weather data). News reports indicate potential water restrictions (cite news articles).",
+                "sources": ["url1", "url2"]
+            }
+            `;
+
+      const response = await this.llm.create({
+        messages: [
+          Message.of({
+            role: "system",
+            text: riskAssessmentPrompt,
+          }),
+        ],
+      });
+
+      const assessment = JSON.parse(response.getTextContent().trim());
+      return { success: true, data: assessment };
+    } catch (error: any) {
+      return this.handleAgentError("RiskAssessmentAgent", error);
+    }
+  }
+}
+
+// 5. Water Shortage Forecast Agent (Modified)
+class WaterShortageForecastAgent extends BaseAgent {
+  private riskAssessmentAgent: RiskAssessmentAgent;
+
+  constructor() {
+    super();
+    this.riskAssessmentAgent = new RiskAssessmentAgent();
+  }
+
+  async run(
+    input: {
+      weather: any;
+      news: any;
+      climate: any;
+      location: string;
+    },
+    chatHistory?: Message[]
+  ): Promise<AgentResponse> {
+    try {
       let details = "Data Collection:\n"; // Start building detailed explanation
 
-      // Check weather data (example: low rainfall)
+      // Summarize Weather Data
+      let weatherSummary = "No weather data available.\n";
       if (
         input.weather &&
-        input.weather.daily &&
-        input.weather.daily.rain_sum
+        input.weather.weatherData &&
+        input.weather.weatherData.daily
       ) {
-        const rainSum = input.weather.daily.rain_sum[0];
-        details += `Weather: Rainfall sum today is ${rainSum}mm.\n`;
-        if (rainSum < 1) {
-          risk = "Medium";
-          summary += " Low rainfall is observed.";
-        }
+        const rainSum = input.weather.weatherData.daily.rain_sum[0];
+        weatherSummary = `Rainfall sum today is ${rainSum}mm.\n`;
+        details += `Weather: ${weatherSummary}`;
       } else {
-        details += "Weather: No rainfall data available.\n";
+        details += "Weather: No weather data available.\n";
       }
 
-      // Check news data (example: reports of shortages)
-      if (input.news && input.news.results && input.news.results.length > 0) {
-        const newsText = input.news.results
-          .map((result: { description: any }) => result.description)
-          .join(" ");
-        details += `News: Found ${input.news.results.length} news articles.\n`;
-        if (newsText.toLowerCase().includes("water restrictions")) {
-          risk = "High";
-          summary += " News reports indicate water restrictions.";
-        } else if (newsText.toLowerCase().includes("water shortage")) {
-          risk = "Medium";
-          summary += " News reports indicate water shortages.";
-        }
+      // Summarize News Data
+      let newsSummary = "No news articles found related to water shortage.\n";
+      let newsSources: string[] = [];
+      if (input.news && input.news.length > 0) {
+        newsSummary = `Found ${input.news.length} news articles.\n`;
+        newsSources = input.news.map((result: { url: string }) => result.url);
+        details += `News: ${newsSummary}`;
       } else {
         details += "News: No news articles found related to water shortage.\n";
       }
 
-      // Check climate data (example: drought conditions)
-      if (
-        input.climate &&
-        input.climate.results &&
-        input.climate.results.length > 0
-      ) {
-        const climateText =
-          typeof input.climate === "object"
-            ? JSON.stringify(input.climate)
-            : input.climate;
-        details += `Climate: Climate data available. \n`;
-        if (climateText.toLowerCase().includes("drought")) {
-          risk = "High";
-          summary += " Climate reports indicate drought conditions.";
-        }
+      // Summarize Climate Data
+      let climateSummary = "No climate data available.\n";
+      if (input.climate && input.climate.length > 0) {
+        climateSummary = `Climate data available.\n`;
+        details += `Climate: ${climateSummary}`;
       } else {
         details += "Climate: No climate data available.\n";
       }
 
-      // Add a more nuanced summary based on the combined data
-      if (risk === "Medium") {
-        summary =
-          `A medium risk of water shortage is predicted in ${input.location}.` +
-          summary;
-      } else if (risk === "High") {
-        summary =
-          `A high risk of water shortage is predicted in ${input.location}! ` +
-          summary;
-      } else {
-        summary =
-          `A low risk of water shortage is predicted in ${input.location}.` +
-          summary;
+      // Call Risk Assessment Agent
+      const assessmentResponse = await this.riskAssessmentAgent.run({
+        weather: weatherSummary,
+        news: input.news,
+        climate: input.climate,
+        location: input.location,
+      });
+
+      if (!assessmentResponse.success) {
+        return assessmentResponse;
       }
 
+      const { risk, summary, reasoning, sources } = assessmentResponse.data;
+
+      const messageText = `The water shortage risk in ${
+        input.location
+      } is ${risk}. ${summary}\n\n${details}\n\nReasoning: ${reasoning}\n\nSources: ${sources.join(
+        ", "
+      )}`;
+
       const mapCommands = [
-        //RESTORED
         {
           command: "UPDATE_MARKER",
           location: input.location,
@@ -433,8 +477,6 @@ class WaterShortageForecastAgent extends BaseAgent {
         },
       ];
 
-      const messageText = `The water shortage risk in ${input.location} is ${risk}. ${summary}\n\n${details}`; // Improved message //RESTORED
-
       return {
         success: true,
         data: {
@@ -442,8 +484,10 @@ class WaterShortageForecastAgent extends BaseAgent {
           summary: summary,
           messageText: messageText,
           mapCommands: mapCommands,
+          reasoning: reasoning,
+          sources: sources,
         },
-      }; // RESTORED
+      };
     } catch (error: any) {
       return this.handleAgentError("WaterShortageForecastAgent", error);
     }
