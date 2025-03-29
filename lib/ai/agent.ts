@@ -38,15 +38,16 @@ abstract class BaseAgent {
     };
   }
 
-  abstract run(input: any): Promise<AgentResponse>;
+  abstract run(input: any, chatHistory?: Message[]): Promise<AgentResponse>; // Modified for chat history
 }
 
-// 1. Orchestrator Agent
+// 1. Orchestrator Agent - Router and Coordinator
 class OrchestratorAgent extends BaseAgent {
   private weatherAgent: WeatherAgent;
   private newsAgent: NewsAgent;
   private climateResearcher: ClimateResearcher;
   private waterShortageForecastAgent: WaterShortageForecastAgent;
+  private generalKnowledgeAgent: GeneralKnowledgeAgent; // NEW
   private memory: UnconstrainedMemory; // Agent-level memory
 
   constructor() {
@@ -55,6 +56,7 @@ class OrchestratorAgent extends BaseAgent {
     this.newsAgent = new NewsAgent();
     this.climateResearcher = new ClimateResearcher();
     this.waterShortageForecastAgent = new WaterShortageForecastAgent();
+    this.generalKnowledgeAgent = new GeneralKnowledgeAgent(); // Initialize
     this.memory = new UnconstrainedMemory(); // Initialize memory
   }
 
@@ -63,86 +65,150 @@ class OrchestratorAgent extends BaseAgent {
     chatHistory: Message[]
   ): Promise<AgentResponse> {
     try {
-      // 1. Extract Location from user prompt (Delegate to LLM)
-      const locationExtractionResponse = await this.extractLocation(
-        userPrompt,
-        chatHistory
-      );
-      if (!locationExtractionResponse.success) {
-        return locationExtractionResponse;
-      }
-      const location = locationExtractionResponse.data;
-
       // Add user message to memory
       await this.memory.add(
         Message.of({ sender: "user", text: userPrompt, role: "user" })
       );
 
-      // 2. Call Data Collection Agents
-      const weatherResponse = await this.weatherAgent.run(location);
-      const newsResponse = await this.newsAgent.run(location);
-      const climateResponse = await this.climateResearcher.run(location);
+      // 1. Intent Recognition
+      const intent = await this.recognizeIntent(userPrompt, chatHistory);
+      console.log("Recognized intent:", intent); // ADDED
 
-      if (
-        !weatherResponse.success ||
-        !newsResponse.success ||
-        !climateResponse.success
-      ) {
-        return {
-          success: false,
-          data: null,
-          error: "Failed to collect data from one or more agents.",
-        };
+      let response: AgentResponse;
+
+      switch (intent.agent) {
+        case "weather":
+          console.log("Calling WeatherAgent"); //ADDED
+          const location =
+            intent.location ||
+            (await this.extractLocation(userPrompt, chatHistory)).data;
+          if (!location) {
+            return {
+              success: false,
+              data: null,
+              error: "Could not determine location for weather.",
+            };
+          }
+          response = await this.weatherAgent.run(location);
+          break;
+        case "waterShortage":
+          console.log("Calling WaterShortageForecastAgent"); //ADDED
+          // Extract location (if not already provided)
+          const locationForWaterShortage =
+            intent.location ||
+            (await this.extractLocation(userPrompt, chatHistory)).data;
+
+          if (!locationForWaterShortage) {
+            return {
+              success: false,
+              data: null,
+              error:
+                "Could not determine location for water shortage forecast.",
+            };
+          }
+
+          //Run data collecting agents only in this case.
+          console.log("calling weather agent for water shortage");
+          const weatherResponse = await this.weatherAgent.run(
+            locationForWaterShortage
+          );
+          console.log("Weather response:", weatherResponse);
+          console.log("calling news agent for water shortage");
+          const newsResponse = await this.newsAgent.run(
+            locationForWaterShortage
+          );
+          console.log("news response:", newsResponse);
+          console.log("calling climate agent for water shortage");
+          const climateResponse = await this.climateResearcher.run(
+            locationForWaterShortage
+          );
+          console.log("climate response", climateResponse);
+
+          if (
+            !weatherResponse.success ||
+            !newsResponse.success ||
+            !climateResponse.success
+          ) {
+            return {
+              success: false,
+              data: null,
+              error: "Failed to collect data from one or more agents.",
+            };
+          }
+
+          // 3. Call Water Shortage Forecast Agent
+          response = await this.waterShortageForecastAgent.run({
+            weather: weatherResponse.data,
+            news: newsResponse.data,
+            climate: climateResponse.data,
+            location: locationForWaterShortage,
+          });
+          break;
+        case "general":
+          console.log("Calling GeneralKnowledgeAgent"); //ADDED
+          response = await this.generalKnowledgeAgent.run(userPrompt);
+          break;
+        default:
+          response = {
+            success: false,
+            data: null,
+            error: "Could not determine the intent of your request.",
+          };
       }
 
-      // 3. Call Water Shortage Forecast Agent
-      const forecastResponse = await this.waterShortageForecastAgent.run({
-        weather: weatherResponse.data,
-        news: newsResponse.data,
-        climate: climateResponse.data,
-        location: location,
-      });
-
-      if (!forecastResponse.success) {
-        return {
-          success: false,
-          data: null,
-          error: "Failed to forecast water shortage.",
-        };
+      if (!response.success) {
+        return response;
       }
 
-      // 4. Format Output (This is where you create the map commands)
-      const { risk, summary } = forecastResponse.data;
-
-      // Add bot message to memory
+      // Add bot message to memory (adjust as needed based on agent response)
       await this.memory.add(
         Message.of({
           sender: "bot",
-          text: `Risk ${risk} - Summary ${summary}`,
+          text: response.data.messageText || JSON.stringify(response.data), //Adjust data property names if needed
           role: "assistant",
         })
       );
 
-      const mapCommands = [
-        {
-          command: "UPDATE_MARKER",
-          location: location,
-          risk: risk,
-          summary: summary,
-        },
-      ];
-
-      const messageText = `The water shortage risk in ${location} is ${risk}. ${summary}`;
-
-      return {
-        success: true,
-        data: {
-          messageText: messageText,
-          mapCommands: mapCommands,
-        },
-      };
+      return response;
     } catch (error: any) {
       return this.handleAgentError("OrchestratorAgent", error);
+    }
+  }
+
+  // INTENT RECOGNITION Agent
+  private async recognizeIntent(
+    prompt: string,
+    chatHistory: Message[]
+  ): Promise<{ agent: string; location?: string }> {
+    try {
+      const response = await this.llm.create({
+        messages: [
+          ...chatHistory.slice(-3), // Include last 3 messages from chat history
+          Message.of({
+            role: "system",
+            text: `You are an expert at determining the user's intent from their prompts.
+                   Possible intents:
+                   - weather:  The user is asking about the weather in a specific location.
+                   - waterShortage: The user is asking about water shortage risks or information in a specific location.
+                   - general: The user is asking a general question, greeting, or requesting help.
+
+                   Respond ONLY with a JSON object with the 'agent' key set to the appropriate intent.  If a location is clearly specified, include a 'location' key.
+                   Examples:
+                   {"agent": "weather", "location": "London"}
+                   {"agent": "waterShortage"}
+                   {"agent": "general"}
+
+                   Do not provide any additional information or conversational text.`,
+          }),
+          Message.of({ role: "user", text: prompt }),
+        ],
+      });
+
+      const intent = JSON.parse(response.getTextContent().trim());
+      return intent;
+    } catch (error: any) {
+      console.error("Intent Recognition error:", error);
+      return { agent: "general" }; // Default to general if intent recognition fails
     }
   }
 
@@ -183,17 +249,25 @@ class WeatherAgent extends BaseAgent {
     this.openMeteoTool = new OpenMeteoTool();
   }
 
-  async run(location: string): Promise<AgentResponse> {
+  async run(location: string, chatHistory?: Message[]): Promise<AgentResponse> {
+    // Modified
     try {
       // Use the 'getWeatherForecast' method from the OpenMeteoTool
       const locationObject = { name: location };
       const currentDate = new Date().toISOString().slice(0, 10);
+      console.log("Calling OpenMeteoTool with location:", locationObject); // ADDED
       const weatherData = await this.openMeteoTool.run({
         location: locationObject,
         start_date: currentDate,
         end_date: currentDate,
       });
-      return { success: true, data: weatherData.result };
+
+      console.log("OpenMeteoTool response:", weatherData); // ADDED
+
+      const messageText = `Current weather in ${location}: ${JSON.stringify(
+        weatherData.result
+      )}`; // More informative
+      return { success: true, data: { messageText } }; //Standardize data format to include messageText
     } catch (error: any) {
       return this.handleAgentError("WeatherAgent", error);
     }
@@ -209,12 +283,17 @@ class NewsAgent extends BaseAgent {
     this.duckDuckGoSearchTool = new DuckDuckGoSearchTool();
   }
 
-  async run(location: string): Promise<AgentResponse> {
+  async run(location: string, chatHistory?: Message[]): Promise<AgentResponse> {
     try {
       // Use the 'search' method from the DuckDuckGoSearchTool
+      console.log(
+        "Calling DuckDuckGoSearchTool with query:",
+        `water shortage in ${location}`
+      ); // ADDED
       const searchResults = await this.duckDuckGoSearchTool.run({
         query: `water shortage in ${location}`,
       });
+      console.log("DuckDuckGoSearchTool response:", searchResults); // ADDED
       return { success: true, data: searchResults.results };
     } catch (error: any) {
       return this.handleAgentError("NewsAgent", error);
@@ -233,11 +312,13 @@ class ClimateResearcher extends BaseAgent {
     this.duckDuckGoSearchTool = new DuckDuckGoSearchTool(); // Intialized here
   }
 
-  async run(location: string): Promise<AgentResponse> {
+  async run(location: string, chatHistory?: Message[]): Promise<AgentResponse> {
     try {
+      console.log("Calling WikipediaTool with query:", `${location} climate`); // ADDED
       let climateData = await this.wikipediaTool.run({
         query: `${location} climate`,
       });
+      console.log("WikipediaTool response:", climateData); // ADDED
       //We are creating sanitation since both tools are providing different return for data
       let sanitizedResults;
 
@@ -258,17 +339,22 @@ class ClimateResearcher extends BaseAgent {
 
 // 5. Water Shortage Forecast Agent
 class WaterShortageForecastAgent extends BaseAgent {
-  async run(input: {
-    weather: any;
-    news: any;
-    climate: any;
-    location: string;
-  }): Promise<AgentResponse> {
+  async run(
+    input: {
+      weather: any;
+      news: any;
+      climate: any;
+      location: string;
+    },
+    chatHistory?: Message[]
+  ): Promise<AgentResponse> {
     try {
       // *** IMPROVED RISK ASSESSMENT LOGIC ***
       let risk = "Low";
       let summary =
         "Based on available data, the risk of water shortage is currently low.";
+
+      let details = "Data Collection:\n"; // Start building detailed explanation
 
       // Check weather data (example: low rainfall)
       if (
@@ -277,10 +363,13 @@ class WaterShortageForecastAgent extends BaseAgent {
         input.weather.daily.rain_sum
       ) {
         const rainSum = input.weather.daily.rain_sum[0];
+        details += `Weather: Rainfall sum today is ${rainSum}mm.\n`;
         if (rainSum < 1) {
           risk = "Medium";
           summary += " Low rainfall is observed.";
         }
+      } else {
+        details += "Weather: No rainfall data available.\n";
       }
 
       // Check news data (example: reports of shortages)
@@ -288,6 +377,7 @@ class WaterShortageForecastAgent extends BaseAgent {
         const newsText = input.news.results
           .map((result: { description: any }) => result.description)
           .join(" ");
+        details += `News: Found ${input.news.results.length} news articles.\n`;
         if (newsText.toLowerCase().includes("water restrictions")) {
           risk = "High";
           summary += " News reports indicate water restrictions.";
@@ -295,6 +385,8 @@ class WaterShortageForecastAgent extends BaseAgent {
           risk = "Medium";
           summary += " News reports indicate water shortages.";
         }
+      } else {
+        details += "News: No news articles found related to water shortage.\n";
       }
 
       // Check climate data (example: drought conditions)
@@ -307,10 +399,13 @@ class WaterShortageForecastAgent extends BaseAgent {
           typeof input.climate === "object"
             ? JSON.stringify(input.climate)
             : input.climate;
+        details += `Climate: Climate data available. \n`;
         if (climateText.toLowerCase().includes("drought")) {
           risk = "High";
           summary += " Climate reports indicate drought conditions.";
         }
+      } else {
+        details += "Climate: No climate data available.\n";
       }
 
       // Add a more nuanced summary based on the combined data
@@ -328,9 +423,51 @@ class WaterShortageForecastAgent extends BaseAgent {
           summary;
       }
 
-      return { success: true, data: { risk: risk, summary: summary } };
+      const mapCommands = [
+        //RESTORED
+        {
+          command: "UPDATE_MARKER",
+          location: input.location,
+          risk: risk,
+          summary: summary,
+        },
+      ];
+
+      const messageText = `The water shortage risk in ${input.location} is ${risk}. ${summary}\n\n${details}`; // Improved message //RESTORED
+
+      return {
+        success: true,
+        data: {
+          risk: risk,
+          summary: summary,
+          messageText: messageText,
+          mapCommands: mapCommands,
+        },
+      }; // RESTORED
     } catch (error: any) {
       return this.handleAgentError("WaterShortageForecastAgent", error);
+    }
+  }
+}
+
+// 6. General Knowledge Agent - Handles greetings, help, etc.
+class GeneralKnowledgeAgent extends BaseAgent {
+  async run(prompt: string, chatHistory?: Message[]): Promise<AgentResponse> {
+    try {
+      const response = await this.llm.create({
+        messages: [
+          Message.of({
+            role: "system",
+            text: `You are a helpful and friendly AI assistant. You can answer general questions, provide greetings, and offer assistance. If you don't know the answer, say you don't know.`,
+          }),
+          Message.of({ role: "user", text: prompt }),
+        ],
+      });
+
+      const messageText = response.getTextContent().trim();
+      return { success: true, data: { messageText } };
+    } catch (error: any) {
+      return this.handleAgentError("GeneralKnowledgeAgent", error);
     }
   }
 }
