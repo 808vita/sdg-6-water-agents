@@ -65,6 +65,13 @@ AquaForecaster uses AI, powered by IBM watsonx.ai and the `beeai-framework`, to 
     npm run start
     ```
 
+*   **Update / Generate Docs:**
+
+    ```bash
+    npm run docs
+    ```
+    Visit docs by navigating to `/docs/index.html` (when the server is running).
+
 ## AI Agent Details (from AquaForecaster):
 ![aquaforecaster-agents](https://github.com/user-attachments/assets/ffac3a70-ea52-4b31-8ed3-1246163cc925)
 
