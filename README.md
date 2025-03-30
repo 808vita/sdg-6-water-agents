@@ -66,6 +66,7 @@ AquaForecaster uses AI, powered by IBM watsonx.ai and the `beeai-framework`, to 
     ```
 
 ## AI Agent Details (from AquaForecaster):
+![aquaforecaster-agents](https://github.com/user-attachments/assets/ffac3a70-ea52-4b31-8ed3-1246163cc925)
 
 AquaForecaster leverages both the `beeai-framework` and IBM watsonx.ai through a multi-agent structure. This structure enables the user to better consume and understand water resources through its design of its AI agents.
 
