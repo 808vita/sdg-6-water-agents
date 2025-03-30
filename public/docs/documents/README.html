@@ -1,0 +1,82 @@
+<!DOCTYPE html><html class="default" lang="en"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>README | sdg-6-water-agents - v0.1.0</title><meta name="description" content="Documentation for sdg-6-water-agents"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><div class="table-cell" id="tsd-search" data-base=".."><div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="../assets/icons.svg#icon-search"></use></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div><div class="field"><div id="tsd-toolbar-links"></div></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="../index.html" class="title">sdg-6-water-agents - v0.1.0</a></div><div class="table-cell" id="tsd-widgets"><a href="#" class="tsd-widget tsd-toolbar-icon menu no-caption" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><ul class="tsd-breadcrumb"><li><a href="../index.html">sdg-6-water-agents</a></li><li><a href="README.html">README</a></li></ul></div><div class="tsd-panel tsd-typography"><p><img src="https://github.com/user-attachments/assets/417b2022-2f27-48b1-9f44-469178bd0adc" alt="AquaForecaster-cover"></p>
+<a id="md:aqua-forecaster" class="tsd-anchor"></a><h1 class="tsd-anchor-link">Aqua Forecaster<a href="#md:aqua-forecaster" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h1><a id="md:introduction" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Introduction<a href="#md:introduction" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>AquaForecaster uses AI, powered by IBM <a href="http://watsonx.ai">watsonx.ai</a> and the <code>beeai-framework</code>, to simplify access to and understanding of information related to water resources.</p>
+<p><strong>Problem:</strong> Accessing and understanding information related to water resources can be challenging due to the distribution and collection of relevant facts, news and data.</p>
+<p><strong>Solution:</strong> AquaForecaster provides a simplified solution for accessing this information.</p>
+<a id="md:key-technologies" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Key Technologies<a href="#md:key-technologies" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li><strong><code>beeai-framework</code>:</strong> Used for AI agent orchestration.</li>
+<li><strong>IBM <a href="http://watsonx.ai">watsonx.ai</a>:</strong> Powers AI insights and data analysis using the Granite Series models to translate the data into human text in the chat.</li>
+</ul>
+<a id="md:features" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Features<a href="#md:features" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li><strong>Orchestrated Information:</strong> The <code>OrchestratorAgent</code> manages key components.</li>
+<li><strong>Automated Data Collection:</strong> Agents gather data (Weather, News, Climate) using various tools.</li>
+<li><strong>Actionable insights:</strong> The <code>WaterShortageForecastAgent</code> combines data, and presents these insights. The agent uses IBM Granite Series models to provide action in the chat. The recommendations and summary is in the chat.</li>
+<li><strong>Accessibility:</strong> Presents its results via the chat system.</li>
+</ul>
+<a id="md:setup-instructions" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Setup Instructions<a href="#md:setup-instructions" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><ol>
+<li>
+<p><strong>Clone the repository</strong></p>
+</li>
+<li>
+<p><strong>Install dependencies:</strong></p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span>
+</code><button type="button">Copy</button></pre>
+
+</li>
+<li>
+<p><strong>Configure environment variables:</strong></p>
+<p>Create a <code>.env</code> file in the project root with the following variables:</p>
+<pre><code><span class="hl-3">WATSONX_API_KEY</span><span class="hl-1">=[</span><span class="hl-3">YOUR_WATSONX_API_KEY</span><span class="hl-1">]</span><br/><span class="hl-3">WATSONX_PROJECT_ID</span><span class="hl-1">=[</span><span class="hl-3">YOUR_WATSONX_PROJECT_ID</span><span class="hl-1">]</span><br/><span class="hl-3">WATSONX_REGION</span><span class="hl-1">=[</span><span class="hl-3">YOUR_WATSONX_REGION</span><span class="hl-1">]</span>
+</code><button>Copy</button></pre>
+
+<ul>
+<li>Obtain these credentials from your IBM Cloud account.</li>
+</ul>
+</li>
+</ol>
+<a id="md:commands" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Commands<a href="#md:commands" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li>
+<p><strong>Local Development Server:</strong></p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">dev</span>
+</code><button type="button">Copy</button></pre>
+
+</li>
+<li>
+<p><strong>Build for Production:</strong></p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">build</span>
+</code><button type="button">Copy</button></pre>
+
+</li>
+<li>
+<p><strong>Start in Production:</strong></p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">start</span>
+</code><button type="button">Copy</button></pre>
+
+</li>
+<li>
+<p><strong>Update / Generate Docs:</strong></p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">docs</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Visit docs by navigating to <code>/docs/index.html</code> (when the server is running).</p>
+</li>
+</ul>
+<a id="md:ai-agent-details-from-aquaforecaster" class="tsd-anchor"></a><h2 class="tsd-anchor-link">AI Agent Details (from AquaForecaster):<a href="#md:ai-agent-details-from-aquaforecaster" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p><img src="https://github.com/user-attachments/assets/ffac3a70-ea52-4b31-8ed3-1246163cc925" alt="aquaforecaster-agents"></p>
+<p>AquaForecaster leverages both the <code>beeai-framework</code> and IBM <a href="http://watsonx.ai">watsonx.ai</a> through a multi-agent structure. This structure enables the user to better consume and understand water resources through its design of its AI agents.</p>
+<ul>
+<li><strong>Core agents include:</strong>
+<ul>
+<li>
+<p><code>OrchestratorAgent</code> using the <code>beeai-framework</code>: This agent receives user requests, directs requests, manages the key workflows.</p>
+</li>
+<li>
+<p>Data gathering agents: Weather, climate, news agents perform this action and feed results to the other agents. They are able to retrieve the data given certain tool, which are public and easily accessible.</p>
+</li>
+<li>
+<p><code>WaterShortageForecastingAgent</code>: This takes insight the data from the agents.</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>The IBM Granite Series models are used to translate the data into human text in the chat.
+The goal is to deliver relevant insights based on credible facts.</p>
+</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#md:aqua-forecaster"><span>Aqua <wbr/>Forecaster</span></a><ul><li><a href="#md:introduction"><span>Introduction</span></a></li><li><a href="#md:key-technologies"><span>Key <wbr/>Technologies</span></a></li><li><a href="#md:features"><span>Features</span></a></li><li><a href="#md:setup-instructions"><span>Setup <wbr/>Instructions</span></a></li><li><a href="#md:commands"><span>Commands</span></a></li><li><a href="#md:ai-agent-details-from-aquaforecaster"><span>AI <wbr/>Agent <wbr/>Details (from <wbr/>Aqua<wbr/>Forecaster):</span></a></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="../index.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="../assets/icons.svg#icon-1"></use></svg><span>sdg-6-water-agents - v0.1.0</span></a><ul class="tsd-small-nested-navigation" id="tsd-nav-container" data-base=".."><li>Loading...</li></ul></nav></div></div></div><footer></footer><div class="overlay"></div></body></html>

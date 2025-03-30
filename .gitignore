@@ -2,7 +2,7 @@
 
 crawl_project.py
 project_structure.txt
-/public/docs
+# /public/docs
 
 # dependencies
 /node_modules
