@@ -28,11 +28,13 @@ body {
 /* Map Component Styles */
 .map-container {
   width: 100%;
-  height: 500px; /* Default height */
+  height: 500px;
+  /* Default height */
 }
 
 /* Example Media Queries - Adjust breakpoints and heights as needed */
 @media (max-width: 640px) {
+
   /* Small screens (phones) */
   .map-container {
     height: 300px;
@@ -40,6 +42,7 @@ body {
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
+
   /* Medium screens (tablets) */
   .map-container {
     height: 80vh;
@@ -48,6 +51,7 @@ body {
 }
 
 @media (min-width: 1024px) and (max-width: 2026px) {
+
   /* Large screens (desktops) */
   .map-container {
     height: 80vh;
@@ -56,9 +60,14 @@ body {
 }
 
 @media (min-width: 2027px) {
+
   /* Large screens (desktops) */
   .map-container {
     height: 80vh;
     width: 60vw;
   }
+}
+
+.leaflet-control-attribution.leaflet-control {
+  display: none;
 }
