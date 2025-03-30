@@ -1,3 +1,5 @@
+
+![AquaForecaster-cover](https://github.com/user-attachments/assets/417b2022-2f27-48b1-9f44-469178bd0adc)
 # Aqua Forecaster
 
 ## Introduction
@@ -76,3 +78,4 @@ AquaForecaster leverages both the `beeai-framework` and IBM watsonx.ai through a
 
 The IBM Granite Series models are used to translate the data into human text in the chat.
 The goal is to deliver relevant insights based on credible facts.
+
