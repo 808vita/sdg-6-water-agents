@@ -5,6 +5,7 @@
   "entryPointStrategy": "expand",
   "entryPoints": ["./app", "./lib", "./components"],
   // "entryPoints": ["./"],
+  "projectDocuments": ["*.md"],
   "skipErrorChecking": true,
   "darkHighlightTheme": "dark-plus",
   "includeVersion": true,
